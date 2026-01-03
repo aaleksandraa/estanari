@@ -2,9 +2,14 @@
 import { useForm, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import Header from '@/Components/Header.vue';
-import { UserIcon, BellIcon, ShieldCheckIcon, ServerIcon } from '@heroicons/vue/24/outline';
+import { UserIcon, BellIcon, ShieldCheckIcon, ServerIcon, CurrencyDollarIcon } from '@heroicons/vue/24/outline';
+
+const props = defineProps({
+    exchangeRates: Object,
+});
 
 const page = usePage();
+const isAdmin = page.props.auth.user?.role === 'admin';
 
 const profileForm = useForm({
     name: page.props.auth.user?.name || '',
@@ -15,6 +20,11 @@ const passwordForm = useForm({
     current_password: '',
     password: '',
     password_confirmation: '',
+});
+
+const exchangeForm = useForm({
+    exchange_rate_eur: props.exchangeRates?.EUR || 1.95583,
+    exchange_rate_usd: props.exchangeRates?.USD || 1.80,
 });
 
 const updateProfile = () => {
@@ -32,6 +42,12 @@ const updatePassword = () => {
         onSuccess: () => {
             passwordForm.reset();
         },
+    });
+};
+
+const updateExchangeRates = () => {
+    exchangeForm.put(route('settings.exchange-rates'), {
+        preserveScroll: true,
     });
 };
 </script>
@@ -99,6 +115,38 @@ const updatePassword = () => {
                     <div class="flex justify-end">
                         <button type="submit" :disabled="passwordForm.processing" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50">
                             {{ passwordForm.processing ? 'Spremanje...' : 'Promijeni lozinku' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Exchange Rates (Admin only) -->
+            <div v-if="isAdmin" class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center gap-2">
+                        <CurrencyDollarIcon class="h-5 w-5 text-green-600" />
+                        <h2 class="text-lg font-semibold text-gray-900">Kursevi valuta</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">Postavite kurseve za konverziju u KM (koristi se za sortiranje i prikaz ukupno)</p>
+                </div>
+                <form @submit.prevent="updateExchangeRates" class="p-6 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">1 EUR = KM</label>
+                            <input v-model="exchangeForm.exchange_rate_eur" type="number" step="0.00001" min="0.01" max="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                            <p class="mt-1 text-xs text-gray-500">Fiksni kurs: 1.95583</p>
+                            <p v-if="exchangeForm.errors.exchange_rate_eur" class="mt-1 text-sm text-red-600">{{ exchangeForm.errors.exchange_rate_eur }}</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">1 USD = KM</label>
+                            <input v-model="exchangeForm.exchange_rate_usd" type="number" step="0.00001" min="0.01" max="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg" />
+                            <p class="mt-1 text-xs text-gray-500">Promjenjiv kurs</p>
+                            <p v-if="exchangeForm.errors.exchange_rate_usd" class="mt-1 text-sm text-red-600">{{ exchangeForm.errors.exchange_rate_usd }}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" :disabled="exchangeForm.processing" class="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600 disabled:opacity-50">
+                            {{ exchangeForm.processing ? 'Spremanje...' : 'Spremi kurseve' }}
                         </button>
                     </div>
                 </form>

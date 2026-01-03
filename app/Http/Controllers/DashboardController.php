@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Payment;
+use App\Models\Setting;
 use App\Models\Supplier;
 use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
@@ -42,6 +43,10 @@ class DashboardController extends Controller
             case 'period':
                 if ($startDate) $query->whereDate('planned_date', '>=', $startDate);
                 if ($endDate) $query->whereDate('planned_date', '<=', $endDate);
+                break;
+            case 'overdue':
+                $query->where('status', 'PLANNED')
+                      ->whereDate('planned_date', '<', $today);
                 break;
             case 'all':
                 // No date filter
@@ -160,7 +165,7 @@ class DashboardController extends Controller
                 $payment->branch->name ?? '',
                 $payment->amount,
                 $payment->currency,
-                $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano',
+                $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 $payment->planned_date->format('d.m.Y'),
                 $payment->description ?? ''
             );
@@ -197,7 +202,7 @@ class DashboardController extends Controller
 
     public function exportExcel(Request $request): StreamedResponse
     {
-        $query = Payment::with(['supplier:id,name', 'branch:id,name'])->orderBy('planned_date');
+        $query = Payment::with(['supplier:id,name', 'branch:id,name']);
         $today = today();
 
         $dateFilter = $request->get('date_filter', 'today');
@@ -228,46 +233,104 @@ class DashboardController extends Controller
         if ($request->filled('supplier_id')) $query->where('supplier_id', $request->supplier_id);
         if ($request->filled('branch_id')) $query->where('branch_id', $request->branch_id);
 
-        $payments = $query->get();
+        $exchangeRates = Setting::getExchangeRates();
+        
+        $payments = $query->get()
+            ->map(function ($payment) use ($exchangeRates) {
+                $payment->amount_in_km = $this->convertToKM($payment->amount, $payment->currency, $exchangeRates);
+                return $payment;
+            })
+            ->sortByDesc('amount_in_km')
+            ->values();
 
         $totalKM = $payments->where('currency', 'KM')->sum('amount');
         $totalEUR = $payments->where('currency', 'EUR')->sum('amount');
         $totalUSD = $payments->where('currency', 'USD')->sum('amount');
+        
+        // Check if there are any EUR or USD payments
+        $hasEurOrUsd = $payments->contains(fn($p) => in_array($p->currency, ['EUR', 'USD']));
+        $grandTotalKM = $payments->sum('amount_in_km');
 
+        $colCount = $hasEurOrUsd ? 8 : 7;
+        
         $excel = new ExcelExportService();
         
         $excel->setTitle(
             'Pregled plaćanja',
             'Period: ' . $this->getDateFilterLabel($dateFilter, $startDate, $endDate) . ' | Exportovano: ' . now()->format('d.m.Y H:i'),
-            7
+            $colCount
         );
 
-        $excel->setSummaryRow([
+        $summaryData = [
             'Ukupno KM' => number_format($totalKM, 2, ',', '.') . ' KM',
             'Ukupno EUR' => number_format($totalEUR, 2, ',', '.') . ' EUR',
             'Ukupno USD' => number_format($totalUSD, 2, ',', '.') . ' USD',
             'Broj stavki' => $payments->count(),
-        ], 3, 7);
+        ];
+        
+        if ($hasEurOrUsd) {
+            $summaryData['UKUPNO (KM)'] = number_format($grandTotalKM, 2, ',', '.') . ' KM';
+        }
 
-        $excel->setHeaders(['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum'], 5);
+        $excel->setSummaryRow($summaryData, 3, $colCount);
+
+        $headers = ['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum'];
+        if ($hasEurOrUsd) {
+            $headers[] = 'Ukupno KM';
+        }
+        $excel->setHeaders($headers, 5);
 
         $data = [];
         foreach ($payments as $payment) {
-            $data[] = [
+            $row = [
                 'invoice' => $payment->invoice_number ?? '-',
                 'supplier' => $payment->supplier->name ?? '-',
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,
-                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano',
+                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 'date' => $payment->planned_date->format('d.m.Y'),
             ];
+            
+            if ($hasEurOrUsd) {
+                $row['amount_km'] = $payment->amount_in_km;
+            }
+            
+            $data[] = $row;
         }
 
-        $excel->setData($data, 6, ['amount' => 'currency']);
-        $excel->autoSizeColumns(7);
+        $columnTypes = ['amount' => 'currency'];
+        if ($hasEurOrUsd) {
+            $columnTypes['amount_km'] = 'currency';
+        }
+
+        $excel->setData($data, 6, $columnTypes);
+        
+        // Add totals row at the bottom
+        $totalsRow = 6 + count($data);
+        $totalsData = ['', '', 'UKUPNO:', '', '', '', ''];
+        if ($hasEurOrUsd) {
+            $totalsData[] = $grandTotalKM;
+        }
+        $excel->setTotalsRow($totalsData, $totalsRow, $colCount);
+        
+        // Format the total amount cell
+        if ($hasEurOrUsd) {
+            $excel->getSheet()->getStyle('H' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        
+        $excel->autoSizeColumns($colCount);
 
         $filename = 'pregled_placanja_' . date('d-m-Y') . '.xlsx';
         return $excel->download($filename);
+    }
+
+    private function convertToKM(float $amount, string $currency, array $rates): float
+    {
+        return match ($currency) {
+            'EUR' => $amount * $rates['EUR'],
+            'USD' => $amount * $rates['USD'],
+            default => $amount,
+        };
     }
 }

@@ -70,7 +70,7 @@ class ReportController extends Controller
             $sheet->setCellValue('C' . $row, $payment->branch->name ?? '-');
             $sheet->setCellValue('D' . $row, $payment->amount);
             $sheet->setCellValue('E' . $row, $payment->currency);
-            $sheet->setCellValue('F' . $row, $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano');
+            $sheet->setCellValue('F' . $row, $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno');
             $sheet->setCellValue('G' . $row, $payment->description ?? '');
             
             $this->applyDataRowStyle($sheet, "A{$row}:G{$row}", $row);
@@ -115,7 +115,7 @@ class ReportController extends Controller
         $this->applySummaryStyle($sheet, 'A2:G2');
 
         // Headers
-        $headers = ['Datum', 'Broj plaćanja', 'Ukupno KM', 'Ukupno EUR', 'Ukupno USD', 'Plaćeno', 'Planirano'];
+        $headers = ['Datum', 'Broj plaćanja', 'Ukupno KM', 'Ukupno EUR', 'Ukupno USD', 'Plaćeno', 'Neplaceno'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '4', $header);
@@ -288,7 +288,7 @@ class ReportController extends Controller
             $sheet->setCellValue('A' . $row, $payment->invoice_number ?? '-');
             $sheet->setCellValue('B' . $row, $payment->supplier->name ?? '-');
             $sheet->setCellValue('C' . $row, $payment->amount);
-            $sheet->setCellValue('D' . $row, $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano');
+            $sheet->setCellValue('D' . $row, $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno');
             $sheet->setCellValue('E' . $row, $payment->planned_date->format('d.m.Y'));
             
             $this->applyDataRowStyle($sheet, "A{$row}:E{$row}", $row);
@@ -305,7 +305,7 @@ class ReportController extends Controller
         $sheet->mergeCells('A1:D1');
         $this->applyTitleStyle($sheet, 'A1:D1');
 
-        $headers = ['Valuta', 'Ukupno', 'Plaćeno', 'Planirano'];
+        $headers = ['Valuta', 'Ukupno', 'Plaćeno', 'Neplaceno'];
         $col = 'A';
         foreach ($headers as $header) {
             $sheet->setCellValue($col . '3', $header);

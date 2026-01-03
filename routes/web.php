@@ -33,7 +33,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
     Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
     Route::put('/payments/{payment}', [PaymentController::class, 'update'])->name('payments.update');
+    Route::delete('/payments/{payment}', [PaymentController::class, 'destroy'])->name('payments.destroy');
     Route::post('/payments/{payment}/mark-paid', [PaymentController::class, 'markAsPaid'])->name('payments.mark-paid');
+    Route::post('/payments/{payment}/mark-unpaid', [PaymentController::class, 'markAsUnpaid'])->name('payments.mark-unpaid');
     Route::post('/payments/batch-mark-paid', [PaymentController::class, 'batchMarkAsPaid'])->name('payments.batch-mark-paid');
     Route::get('/payments/export', [PaymentController::class, 'export'])->name('payments.export');
     Route::get('/payments/export-excel', [PaymentController::class, 'exportExcel'])->name('payments.export-excel');
@@ -69,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
     Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
+    Route::put('/settings/exchange-rates', [SettingsController::class, 'updateExchangeRates'])->name('settings.exchange-rates');
 
     // Payment Plans
     Route::get('/plans', [PaymentPlanController::class, 'index'])->name('plans.index');

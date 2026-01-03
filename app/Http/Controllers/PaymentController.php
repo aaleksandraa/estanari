@@ -19,11 +19,9 @@ class PaymentController extends Controller
     public function index(Request $request): InertiaResponse
     {
         $query = Payment::with(['supplier:id,name', 'branch:id,name'])
-            ->orderBy('planned_date');
+            ->where('status', 'PAID')
+            ->orderBy('paid_date', 'desc');
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
         if ($request->filled('currency')) {
             $query->where('currency', $request->currency);
         }
@@ -35,13 +33,13 @@ class PaymentController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->whereHas('supplier', fn($sq) => $sq->where('name', 'like', "%{$search}%"))
                   ->orWhereHas('branch', fn($sq) => $sq->where('name', 'like', "%{$search}%"))
-                  ->orWhere('description', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('invoice_number', 'like', "%{$search}%");
             });
         }
 
         $payments = $query->get();
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']);
-        $branches = Branch::where('is_active', true)->orderBy('name')->get(['id', 'name', 'supplier_id']);
 
         $summary = [
             'totalKM' => $payments->where('currency', 'KM')->sum('amount'),
@@ -53,9 +51,8 @@ class PaymentController extends Controller
         return Inertia::render('Payments', [
             'payments' => $payments,
             'suppliers' => $suppliers,
-            'branches' => $branches,
             'summary' => $summary,
-            'filters' => $request->only(['status', 'currency', 'supplier_id', 'search']),
+            'filters' => $request->only(['currency', 'supplier_id', 'search']),
         ]);
     }
 
@@ -132,6 +129,28 @@ class PaymentController extends Controller
         return back()->with('success', count($payments) . ' plaćanja označeno kao plaćeno.');
     }
 
+    public function markAsUnpaid(Payment $payment): RedirectResponse
+    {
+        $oldData = $payment->toArray();
+        $payment->update([
+            'status' => 'PLANNED',
+            'paid_date' => null,
+            'paid_by' => null,
+        ]);
+        AuditLog::log('payments', $payment->id, 'UPDATE', $oldData, $payment->fresh()->toArray());
+
+        return back()->with('success', 'Plaćanje vraćeno u neplaćeno.');
+    }
+
+    public function destroy(Payment $payment): RedirectResponse
+    {
+        $oldData = $payment->toArray();
+        AuditLog::log('payments', $payment->id, 'DELETE', $oldData, null);
+        $payment->delete();
+
+        return back()->with('success', 'Plaćanje uspješno obrisano.');
+    }
+
     public function export(Request $request): Response
     {
         $query = Payment::with(['supplier:id,name', 'branch:id,name'])
@@ -159,7 +178,7 @@ class PaymentController extends Controller
                 $payment->invoice_number ?? '',
                 $payment->amount,
                 $payment->currency,
-                $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano',
+                $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 $payment->planned_date->format('d.m.Y'),
                 $payment->paid_date?->format('d.m.Y') ?? '',
                 $payment->description ?? ''
@@ -217,7 +236,7 @@ class PaymentController extends Controller
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,
-                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano',
+                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 'planned_date' => $payment->planned_date->format('d.m.Y'),
                 'paid_date' => $payment->paid_date?->format('d.m.Y') ?? '-',
             ];

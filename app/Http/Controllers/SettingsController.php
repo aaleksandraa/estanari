@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -13,7 +14,11 @@ class SettingsController extends Controller
 {
     public function index(): Response
     {
-        return Inertia::render('Settings');
+        $exchangeRates = Setting::getExchangeRates();
+        
+        return Inertia::render('Settings', [
+            'exchangeRates' => $exchangeRates,
+        ]);
     }
 
     public function updateProfile(Request $request): RedirectResponse
@@ -40,5 +45,23 @@ class SettingsController extends Controller
         ]);
 
         return back()->with('success', 'Lozinka uspješno promijenjena.');
+    }
+
+    public function updateExchangeRates(Request $request): RedirectResponse
+    {
+        // Only admin can update exchange rates
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Nemate dozvolu za ovu akciju.');
+        }
+
+        $validated = $request->validate([
+            'exchange_rate_eur' => 'required|numeric|min:0.01|max:10',
+            'exchange_rate_usd' => 'required|numeric|min:0.01|max:10',
+        ]);
+
+        Setting::set('exchange_rate_eur', $validated['exchange_rate_eur']);
+        Setting::set('exchange_rate_usd', $validated['exchange_rate_usd']);
+
+        return back()->with('success', 'Kursevi valuta uspješno ažurirani.');
     }
 }

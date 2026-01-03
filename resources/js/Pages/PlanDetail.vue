@@ -25,6 +25,7 @@ const props = defineProps({
     plan: Object,
     payments: Array,
     availablePayments: Array,
+    exchangeRates: Object,
 });
 
 const page = usePage();
@@ -47,6 +48,17 @@ const plannedPaymentsCount = computed(() => props.payments?.length || 0);
 
 const canModify = computed(() => {
     return !props.plan.is_paid && page.props.auth?.user;
+});
+
+// Check if there are EUR or USD payments
+const hasEurOrUsd = computed(() => {
+    return props.payments?.some(p => p.currency === 'EUR' || p.currency === 'USD') || false;
+});
+
+// Calculate grand total in KM
+const grandTotalKM = computed(() => {
+    if (!props.payments) return 0;
+    return props.payments.reduce((sum, p) => sum + (p.amount_in_km || p.amount), 0);
 });
 
 const filteredAvailablePayments = computed(() => {
@@ -256,6 +268,16 @@ const getCurrencyColor = (currency) => {
                         <p class="text-lg font-semibold text-gray-800">{{ formatDate(plan.created_at) }}</p>
                     </div>
                 </div>
+                <!-- Grand Total KM row (only if EUR/USD exists) -->
+                <div v-if="hasEurOrUsd" :class="['px-6 py-4 border-t', plan.is_paid ? 'bg-green-100 border-green-200' : 'bg-blue-100 border-blue-200']">
+                    <div class="flex items-center justify-center gap-3">
+                        <span class="text-sm font-medium text-gray-600">UKUPNO KONVERTOVANO U KM:</span>
+                        <span :class="['text-xl font-bold', plan.is_paid ? 'text-green-700' : 'text-blue-700']">
+                            {{ formatCurrency(grandTotalKM, 'KM') }}
+                        </span>
+                        <span class="text-xs text-gray-500">(EUR: {{ exchangeRates?.EUR || 1.95583 }} KM, USD: {{ exchangeRates?.USD || 1.80 }} KM)</span>
+                    </div>
+                </div>
                 <div :class="['px-6 py-3 border-t', plan.is_paid ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200']">
                     <div class="flex items-center gap-4 text-sm">
                         <span class="text-gray-500">Filter:</span>
@@ -277,6 +299,7 @@ const getCurrencyColor = (currency) => {
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Poslovnica</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Br. fakture</th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Iznos</th>
+                                <th v-if="hasEurOrUsd" class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Ukupno KM</th>
                                 <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Status</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Datum</th>
                                 <th v-if="canModify" class="px-4 py-3 w-12"></th>
@@ -301,9 +324,14 @@ const getCurrencyColor = (currency) => {
                                         {{ formatCurrency(payment.amount, payment.currency) }}
                                     </span>
                                 </td>
+                                <td v-if="hasEurOrUsd" class="px-4 py-3 text-right">
+                                    <span class="font-semibold text-sm text-gray-700">
+                                        {{ formatCurrency(payment.amount_in_km || payment.amount, 'KM') }}
+                                    </span>
+                                </td>
                                 <td class="px-4 py-3 text-center">
                                     <span :class="['px-2.5 py-0.5 rounded-full text-xs font-medium', payment.status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800']">
-                                        {{ payment.status === 'PAID' ? 'Plaćeno' : 'Planirano' }}
+                                        {{ payment.status === 'PAID' ? 'Plaćeno' : 'Neplaćeno' }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3">

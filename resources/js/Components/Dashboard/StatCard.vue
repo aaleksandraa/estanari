@@ -8,7 +8,13 @@ defineProps({
         type: String,
         default: 'default',
     },
+    clickable: {
+        type: Boolean,
+        default: false,
+    },
 });
+
+defineEmits(['click']);
 
 const variantClasses = {
     default: {
@@ -27,20 +33,30 @@ const variantClasses = {
         value: 'text-amber-600',
         icon: 'bg-amber-100 text-amber-600',
     },
+    danger: {
+        value: 'text-red-600',
+        icon: 'bg-red-100 text-red-600',
+    },
 };
 </script>
 
 <template>
-    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+    <div 
+        @click="clickable && $emit('click')"
+        :class="[
+            'rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow',
+            clickable ? 'cursor-pointer hover:shadow-md hover:border-gray-300' : 'hover:shadow-md'
+        ]"
+    >
         <div class="flex items-start justify-between">
             <div class="space-y-1">
                 <p class="text-sm font-medium text-gray-500">{{ title }}</p>
-                <p :class="['text-2xl font-bold tracking-tight', variantClasses[variant].value]">
+                <p :class="['text-2xl font-bold tracking-tight', variantClasses[variant]?.value || variantClasses.default.value]">
                     {{ value }}
                 </p>
                 <p v-if="subtitle" class="text-xs text-gray-500">{{ subtitle }}</p>
             </div>
-            <div :class="['flex h-10 w-10 items-center justify-center rounded-lg', variantClasses[variant].icon]">
+            <div :class="['flex h-10 w-10 items-center justify-center rounded-lg', variantClasses[variant]?.icon || variantClasses.default.icon]">
                 <component :is="icon" class="h-5 w-5" />
             </div>
         </div>

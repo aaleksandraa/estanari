@@ -213,8 +213,17 @@ const exportExcel = () => {
 };
 
 const getDateFilterLabel = () => {
-    const labels = { today: 'Danas', tomorrow: 'Sutra', '3days': '3 dana', '7days': '7 dana', period: 'Period', all: 'Svi' };
+    const labels = { today: 'Danas', tomorrow: 'Sutra', '3days': '3 dana', '7days': '7 dana', period: 'Period', all: 'Svi', overdue: 'Nije plaćeno na vrijeme' };
     return labels[dateFilter.value] || dateFilter.value;
+};
+
+const showOverdueOnly = () => {
+    dateFilter.value = 'overdue';
+    statusFilter.value = '';
+    currencyFilter.value = '';
+    supplierFilter.value = '';
+    branchFilter.value = '';
+    router.get(route('dashboard'), { date_filter: 'overdue' }, { preserveState: true });
 };
 </script>
 
@@ -225,9 +234,17 @@ const getDateFilterLabel = () => {
             <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard title="Danas za plaćanje" :value="stats.todayCount.toString()" subtitle="planiranih plaćanja" :icon="ClockIcon" variant="warning" />
-                <StatCard title="Planirana plaćanja" :value="stats.plannedCount.toString()" subtitle="u odabranom periodu" :icon="CreditCardIcon" variant="primary" />
+                <StatCard title="Neplaćeno" :value="stats.plannedCount.toString()" subtitle="u odabranom periodu" :icon="CreditCardIcon" variant="primary" />
                 <StatCard title="Plaćeno" :value="stats.paidCount.toString()" subtitle="u odabranom periodu" :icon="CheckCircleIcon" variant="success" />
-                <StatCard title="Zakašnjela" :value="stats.overdueCount.toString()" subtitle="potrebna pažnja" :icon="ExclamationCircleIcon" :variant="stats.overdueCount > 0 ? 'warning' : 'default'" />
+                <StatCard 
+                    title="Nije plaćeno na vrijeme" 
+                    :value="stats.overdueCount.toString()" 
+                    subtitle="klikni za pregled" 
+                    :icon="ExclamationCircleIcon" 
+                    :variant="stats.overdueCount > 0 ? 'danger' : 'default'" 
+                    :clickable="stats.overdueCount > 0"
+                    @click="showOverdueOnly"
+                />
             </div>
 
             <!-- Date Filters -->
@@ -240,6 +257,9 @@ const getDateFilterLabel = () => {
                 </button>
                 <button @click="dateFilter = 'period'" :class="['px-3 py-1.5 text-sm font-medium rounded-lg transition-colors', dateFilter === 'period' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50']">
                     Period
+                </button>
+                <button v-if="dateFilter === 'overdue'" class="px-3 py-1.5 text-sm font-medium rounded-lg bg-red-500 text-white">
+                    Nije plaćeno na vrijeme
                 </button>
                 <template v-if="dateFilter === 'period'">
                     <div class="w-36">
@@ -257,7 +277,7 @@ const getDateFilterLabel = () => {
                 <div class="flex items-center gap-2 text-sm text-gray-500"><FunnelIcon class="h-4 w-4" /><span>Filteri:</span></div>
                 <select v-model="statusFilter" @change="applyFilters" class="h-9 pl-3 pr-8 text-sm border border-gray-300 rounded-lg bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3d%22http%3a%2f%2fwww.w3.org%2f2000%2fsvg%22%20viewBox%3d%220%200%2020%2020%22%20fill%3d%22%236b7280%22%3e%3cpath%20fill-rule%3d%22evenodd%22%20d%3d%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3d%22evenodd%22%2f%3e%3c%2fsvg%3e')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                     <option value="">Svi statusi</option>
-                    <option value="PLANNED">Planirano</option>
+                    <option value="PLANNED">Neplaćeno</option>
                     <option value="PAID">Plaćeno</option>
                 </select>
                 <select v-model="currencyFilter" @change="applyFilters" class="h-9 pl-3 pr-8 text-sm border border-gray-300 rounded-lg bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3d%22http%3a%2f%2fwww.w3.org%2f2000%2fsvg%22%20viewBox%3d%220%200%2020%2020%22%20fill%3d%22%236b7280%22%3e%3cpath%20fill-rule%3d%22evenodd%22%20d%3d%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3d%22evenodd%22%2f%3e%3c%2fsvg%3e')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">

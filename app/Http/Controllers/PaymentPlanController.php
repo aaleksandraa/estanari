@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Payment;
 use App\Models\PaymentPlan;
+use App\Models\Setting;
 use App\Services\ExcelExportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,10 +51,17 @@ class PaymentPlanController extends Controller
 
     public function show(PaymentPlan $plan): InertiaResponse
     {
+        $exchangeRates = Setting::getExchangeRates();
+        
         $payments = Payment::with(['supplier:id,name', 'branch:id,name'])
             ->whereIn('id', $plan->payment_ids ?? [])
-            ->orderBy('planned_date')
-            ->get();
+            ->get()
+            ->map(function ($payment) use ($exchangeRates) {
+                $payment->amount_in_km = $this->convertToKM($payment->amount, $payment->currency, $exchangeRates);
+                return $payment;
+            })
+            ->sortByDesc('amount_in_km')
+            ->values();
 
         // Get available payments (not in this plan, status PLANNED)
         $availablePayments = Payment::with(['supplier:id,name', 'branch:id,name'])
@@ -66,7 +74,17 @@ class PaymentPlanController extends Controller
             'plan' => $plan->load('creator:id,name'),
             'payments' => $payments,
             'availablePayments' => $availablePayments,
+            'exchangeRates' => $exchangeRates,
         ]);
+    }
+
+    private function convertToKM(float $amount, string $currency, array $rates): float
+    {
+        return match ($currency) {
+            'EUR' => $amount * $rates['EUR'],
+            'USD' => $amount * $rates['USD'],
+            default => $amount,
+        };
     }
 
     public function destroy(PaymentPlan $plan): RedirectResponse
@@ -223,7 +241,7 @@ class PaymentPlanController extends Controller
                 $payment->branch->name ?? '',
                 number_format($payment->amount, 2, ',', '.'),
                 $payment->currency,
-                $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano',
+                $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 $payment->planned_date->format('d.m.Y'),
                 $payment->description ?? ''
             );
@@ -258,43 +276,94 @@ class PaymentPlanController extends Controller
 
     public function exportExcel(PaymentPlan $plan): StreamedResponse
     {
+        $exchangeRates = Setting::getExchangeRates();
+        
         $payments = Payment::with(['supplier:id,name', 'branch:id,name'])
             ->whereIn('id', $plan->payment_ids ?? [])
-            ->orderBy('planned_date')
-            ->get();
+            ->get()
+            ->map(function ($payment) use ($exchangeRates) {
+                $payment->amount_in_km = $this->convertToKM($payment->amount, $payment->currency, $exchangeRates);
+                return $payment;
+            })
+            ->sortByDesc('amount_in_km')
+            ->values();
 
+        // Check if there are any EUR or USD payments
+        $hasEurOrUsd = $payments->contains(fn($p) => in_array($p->currency, ['EUR', 'USD']));
+        
         $excel = new ExcelExportService();
+        
+        // Calculate grand total in KM
+        $grandTotalKM = $payments->sum('amount_in_km');
+        
+        $colCount = $hasEurOrUsd ? 8 : 7;
         
         $excel->setTitle(
             "Plan plaćanja: {$plan->name}",
             "Kreiran: " . $plan->created_at->format('d.m.Y H:i') . ($plan->description ? " | {$plan->description}" : ''),
-            7
+            $colCount
         );
 
-        $excel->setSummaryRow([
+        $summaryData = [
             'Ukupno KM' => number_format($plan->total_km, 2, ',', '.') . ' KM',
             'Ukupno EUR' => number_format($plan->total_eur, 2, ',', '.') . ' EUR',
             'Ukupno USD' => number_format($plan->total_usd ?? 0, 2, ',', '.') . ' USD',
             'Broj stavki' => $plan->payment_count,
-        ], 3, 7);
+        ];
+        
+        if ($hasEurOrUsd) {
+            $summaryData['UKUPNO (KM)'] = number_format($grandTotalKM, 2, ',', '.') . ' KM';
+        }
 
-        $excel->setHeaders(['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum'], 5);
+        $excel->setSummaryRow($summaryData, 3, $colCount);
+
+        $headers = ['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum'];
+        if ($hasEurOrUsd) {
+            $headers[] = 'Ukupno KM';
+        }
+        $excel->setHeaders($headers, 5);
 
         $data = [];
         foreach ($payments as $payment) {
-            $data[] = [
+            $row = [
                 'invoice' => $payment->invoice_number ?? '-',
                 'supplier' => $payment->supplier->name ?? 'Custom stavka',
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,
-                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano',
+                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 'date' => $payment->planned_date->format('d.m.Y'),
             ];
+            
+            if ($hasEurOrUsd) {
+                $row['amount_km'] = $payment->amount_in_km;
+            }
+            
+            $data[] = $row;
         }
 
-        $excel->setData($data, 6, ['amount' => 'currency']);
-        $excel->autoSizeColumns(7);
+        $columnTypes = ['amount' => 'currency'];
+        if ($hasEurOrUsd) {
+            $columnTypes['amount_km'] = 'currency';
+        }
+
+        $excel->setData($data, 6, $columnTypes);
+        
+        // Add totals row at the bottom
+        $totalsRow = 6 + count($data);
+        $totalsData = ['', '', 'UKUPNO:', '', '', '', ''];
+        if ($hasEurOrUsd) {
+            $totalsData[] = $grandTotalKM;
+        }
+        $excel->setTotalsRow($totalsData, $totalsRow, $colCount);
+        
+        // Format the total amount cell
+        if ($hasEurOrUsd) {
+            $totalColLetter = $excel->getSheet()->getCell('H' . $totalsRow);
+            $excel->getSheet()->getStyle('H' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
+        }
+        
+        $excel->autoSizeColumns($colCount);
 
         $filename = 'plan_' . \Str::slug($plan->name) . '_' . date('d-m-Y') . '.xlsx';
         return $excel->download($filename);
@@ -305,7 +374,7 @@ class PaymentPlanController extends Controller
         $rows = '';
         foreach ($payments as $payment) {
             $statusClass = $payment->status === 'PAID' ? 'status-paid' : 'status-planned';
-            $statusText = $payment->status === 'PAID' ? 'Plaćeno' : 'Planirano';
+            $statusText = $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno';
             $amountClass = $payment->currency === 'KM' ? 'amount-km' : ($payment->currency === 'EUR' ? 'amount-eur' : 'amount-usd');
             $formattedAmount = number_format($payment->amount, 2, ',', '.');
             $formattedDate = $payment->planned_date->format('d.m.Y');

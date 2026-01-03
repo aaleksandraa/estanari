@@ -23,7 +23,7 @@ const page = usePage();
 
 const navigation = [
     { name: 'Pregled', href: '/', icon: HomeIcon, routeName: 'dashboard' },
-    { name: 'Plaćanja', href: '/payments', icon: CreditCardIcon, routeName: 'payments.index' },
+    { name: 'Plaćeno', href: '/payments', icon: CreditCardIcon, routeName: 'payments.index' },
     { name: 'Planovi', href: '/plans', icon: ClipboardDocumentListIcon, routeName: 'plans.index' },
     { name: 'Dobavljači', href: '/suppliers', icon: BuildingOffice2Icon, routeName: 'suppliers.index' },
     { name: 'Izvještaji', href: '/reports', icon: DocumentTextIcon, routeName: 'reports.index' },
