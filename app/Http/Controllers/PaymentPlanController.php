@@ -237,13 +237,13 @@ class PaymentPlanController extends Controller
             $csv .= sprintf(
                 "%s;%s;%s;%s;%s;%s;%s;%s\n",
                 $payment->invoice_number ?? '',
-                $payment->supplier->name ?? '',
+                $payment->supplier->name ?? ($payment->description ?? ''),
                 $payment->branch->name ?? '',
                 number_format($payment->amount, 2, ',', '.'),
                 $payment->currency,
-                $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
+                $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaćeno',
                 $payment->planned_date->format('d.m.Y'),
-                $payment->description ?? ''
+                $payment->supplier ? ($payment->description ?? '') : ''
             );
         }
 
@@ -327,11 +327,11 @@ class PaymentPlanController extends Controller
         foreach ($payments as $payment) {
             $row = [
                 'invoice' => $payment->invoice_number ?? '-',
-                'supplier' => $payment->supplier->name ?? 'Custom stavka',
+                'supplier' => $payment->supplier->name ?? ($payment->description ?? '-'),
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,
-                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
+                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaćeno',
                 'date' => $payment->planned_date->format('d.m.Y'),
             ];
             
@@ -374,12 +374,12 @@ class PaymentPlanController extends Controller
         $rows = '';
         foreach ($payments as $payment) {
             $statusClass = $payment->status === 'PAID' ? 'status-paid' : 'status-planned';
-            $statusText = $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno';
+            $statusText = $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaćeno';
             $amountClass = $payment->currency === 'KM' ? 'amount-km' : ($payment->currency === 'EUR' ? 'amount-eur' : 'amount-usd');
             $formattedAmount = number_format($payment->amount, 2, ',', '.');
             $formattedDate = $payment->planned_date->format('d.m.Y');
-            $supplierName = $payment->supplier->name ?? 'N/A';
-            $branchName = $payment->branch->name ?? 'N/A';
+            $supplierName = $payment->supplier->name ?? ($payment->description ?? '-');
+            $branchName = $payment->branch->name ?? '-';
             $invoiceNumber = $payment->invoice_number ?? '-';
             
             $rows .= "<tr>
