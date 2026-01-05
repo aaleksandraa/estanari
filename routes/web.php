@@ -72,6 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/profile', [SettingsController::class, 'updateProfile'])->name('settings.profile');
     Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::put('/settings/exchange-rates', [SettingsController::class, 'updateExchangeRates'])->name('settings.exchange-rates');
+    Route::put('/settings/company-name', [SettingsController::class, 'updateCompanyName'])->name('settings.company-name');
 
     // Payment Plans
     Route::get('/plans', [PaymentPlanController::class, 'index'])->name('plans.index');

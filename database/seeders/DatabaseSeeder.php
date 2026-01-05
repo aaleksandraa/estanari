@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         // Create admin user
         $admin = User::create([
             'name' => 'Admin User',
-            'email' => 'admin@e-stanari.ba',
+            'email' => 'admin@wizflussi.app',
             'password' => Hash::make('password'),
         ]);
         UserRole::create(['user_id' => $admin->id, 'role' => 'admin']);
@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
         // Create accountant user
         $accountant = User::create([
             'name' => 'Računovodstvo',
-            'email' => 'racunovodstvo@e-stanari.ba',
+            'email' => 'racunovodstvo@wizflussi.app',
             'password' => Hash::make('password'),
         ]);
         UserRole::create(['user_id' => $accountant->id, 'role' => 'accountant']);
@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
         // Create viewer user
         $viewer = User::create([
             'name' => 'Pregled User',
-            'email' => 'pregled@e-stanari.ba',
+            'email' => 'pregled@wizflussi.app',
             'password' => Hash::make('password'),
         ]);
         UserRole::create(['user_id' => $viewer->id, 'role' => 'viewer']);

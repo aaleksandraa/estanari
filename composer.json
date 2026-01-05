@@ -1,8 +1,8 @@
 {
-    "name": "e-stanari/backend",
+    "name": "wizflussi/backend",
     "type": "project",
-    "description": "e-Stanari - Sistem za upravljanje plaćanjima",
-    "keywords": ["laravel", "e-stanari", "payments"],
+    "description": "WizFlussi - Sistem za upravljanje plaćanjima",
+    "keywords": ["laravel", "wizflussi", "payments"],
     "license": "MIT",
     "require": {
         "php": "^8.2",

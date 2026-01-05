@@ -27,7 +27,7 @@ const navigation = [
     { name: 'Planovi', href: '/plans', icon: ClipboardDocumentListIcon, routeName: 'plans.index' },
     { name: 'Dobavljači', href: '/suppliers', icon: BuildingOffice2Icon, routeName: 'suppliers.index' },
     { name: 'Izvještaji', href: '/reports', icon: DocumentTextIcon, routeName: 'reports.index' },
-    { name: 'Postavke', href: '/settings', icon: Cog6ToothIcon, routeName: 'settings.index' },
+    { name: 'Podešavanja', href: '/settings', icon: Cog6ToothIcon, routeName: 'settings.index' },
 ];
 
 const roleLabels = {
@@ -58,7 +58,7 @@ const isActive = (routeName) => {
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500">
                     <WalletIcon class="h-5 w-5 text-white" />
                 </div>
-                <span class="font-semibold text-sm">e-Stanari</span>
+                <span class="font-semibold text-sm">{{ page.props.appSettings?.companyName || 'WizFlussi' }}</span>
             </div>
             <button
                 @click="$emit('toggle')"
@@ -112,7 +112,7 @@ const isActive = (routeName) => {
         <!-- Footer -->
         <div v-if="!collapsed" class="p-4 border-t border-slate-700">
             <div class="text-xs text-slate-500">
-                <p>e-Stanari v1.0</p>
+                <p>{{ page.props.appSettings?.companyName || 'WizFlussi' }} v1.0</p>
                 <p class="mt-1">© 2026</p>
             </div>
         </div>

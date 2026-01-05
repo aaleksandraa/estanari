@@ -1,4 +1,4 @@
-# e-Stanari - Laravel 12 + Vue.js 3
+# WizFlussi - Laravel 12 + Vue.js 3
 
 Sistem za upravljanje plaćanjima dobavljačima.
 
@@ -52,9 +52,9 @@ Aplikacija: http://localhost:8000
 
 | Email | Lozinka | Uloga |
 |-------|---------|-------|
-| admin@e-stanari.ba | password | Administrator |
-| racunovodstvo@e-stanari.ba | password | Računovodstvo |
-| pregled@e-stanari.ba | password | Pregled (samo čitanje) |
+| admin@wizflussi.ba | password | Administrator |
+| racunovodstvo@wizflussi.ba | password | Računovodstvo |
+| pregled@wizflussi.ba | password | Pregled (samo čitanje) |
 
 ## Funkcionalnosti
 

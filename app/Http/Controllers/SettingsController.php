@@ -15,9 +15,11 @@ class SettingsController extends Controller
     public function index(): Response
     {
         $exchangeRates = Setting::getExchangeRates();
+        $companyName = Setting::get('company_name', 'WizFlussi');
         
         return Inertia::render('Settings', [
             'exchangeRates' => $exchangeRates,
+            'companyName' => $companyName,
         ]);
     }
 
@@ -63,5 +65,21 @@ class SettingsController extends Controller
         Setting::set('exchange_rate_usd', $validated['exchange_rate_usd']);
 
         return back()->with('success', 'Kursevi valuta uspješno ažurirani.');
+    }
+
+    public function updateCompanyName(Request $request): RedirectResponse
+    {
+        // Only admin can update company name
+        if (auth()->user()->role !== 'admin') {
+            abort(403, 'Nemate dozvolu za ovu akciju.');
+        }
+
+        $validated = $request->validate([
+            'company_name' => 'required|string|max:100',
+        ]);
+
+        Setting::set('company_name', $validated['company_name']);
+
+        return back()->with('success', 'Naziv firme uspješno ažuriran.');
     }
 }

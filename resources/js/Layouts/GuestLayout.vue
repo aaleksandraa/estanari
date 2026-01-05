@@ -10,7 +10,7 @@ import { WalletIcon } from '@heroicons/vue/24/outline';
                     <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-500">
                         <WalletIcon class="h-6 w-6 text-white" />
                     </div>
-                    <h1 class="text-2xl font-bold text-gray-900">e-Stanari</h1>
+                    <h1 class="text-2xl font-bold text-gray-900">WizFlussi</h1>
                     <p class="text-gray-500 mt-1">Sistem za upravljanje plaćanjima</p>
                 </div>
                 <slot />

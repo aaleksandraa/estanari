@@ -2,10 +2,11 @@
 import { useForm, usePage } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import Header from '@/Components/Header.vue';
-import { UserIcon, BellIcon, ShieldCheckIcon, ServerIcon, CurrencyDollarIcon } from '@heroicons/vue/24/outline';
+import { UserIcon, ShieldCheckIcon, ServerIcon, CurrencyDollarIcon, BuildingOfficeIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     exchangeRates: Object,
+    companyName: String,
 });
 
 const page = usePage();
@@ -25,6 +26,10 @@ const passwordForm = useForm({
 const exchangeForm = useForm({
     exchange_rate_eur: props.exchangeRates?.EUR || 1.95583,
     exchange_rate_usd: props.exchangeRates?.USD || 1.80,
+});
+
+const companyForm = useForm({
+    company_name: props.companyName || 'WizFlussi',
 });
 
 const updateProfile = () => {
@@ -50,12 +55,41 @@ const updateExchangeRates = () => {
         preserveScroll: true,
     });
 };
+
+const updateCompanyName = () => {
+    companyForm.put(route('settings.company-name'), {
+        preserveScroll: true,
+    });
+};
 </script>
 
 <template>
     <MainLayout>
-        <Header title="Postavke" />
+        <Header title="Podešavanja" />
         <div class="p-6 space-y-6 max-w-3xl">
+            <!-- Company Name (Admin only) -->
+            <div v-if="isAdmin" class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center gap-2">
+                        <BuildingOfficeIcon class="h-5 w-5 text-blue-600" />
+                        <h2 class="text-lg font-semibold text-gray-900">Naziv firme</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">Naziv koji se prikazuje u aplikaciji</p>
+                </div>
+                <form @submit.prevent="updateCompanyName" class="p-6 space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Naziv firme</label>
+                        <input v-model="companyForm.company_name" type="text" maxlength="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="npr. Moja Firma d.o.o." />
+                        <p v-if="companyForm.errors.company_name" class="mt-1 text-sm text-red-600">{{ companyForm.errors.company_name }}</p>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" :disabled="companyForm.processing" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50">
+                            {{ companyForm.processing ? 'Spremanje...' : 'Spremi naziv' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <!-- Profile Settings -->
             <div class="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -165,7 +199,7 @@ const updateExchangeRates = () => {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="font-medium text-sm text-gray-900">Verzija aplikacije</p>
-                            <p class="text-sm text-gray-500">e-Stanari v1.0.0</p>
+                            <p class="text-sm text-gray-500">{{ page.props.appSettings?.companyName || 'WizFlussi' }} v1.0.0</p>
                         </div>
                     </div>
                     <hr />

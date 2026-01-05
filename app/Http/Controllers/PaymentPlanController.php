@@ -480,7 +480,7 @@ class PaymentPlanController extends Controller
             </table>
         </div>
         <div class="footer">
-            e-Stanari - Plan plaćanja exportovan {$exportDateFormatted}
+            WizFlussi - Plan plaćanja exportovan {$exportDateFormatted}
         </div>
     </div>
     <script>window.print();</script>
