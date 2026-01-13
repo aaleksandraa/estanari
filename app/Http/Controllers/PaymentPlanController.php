@@ -362,10 +362,13 @@ class PaymentPlanController extends Controller
     {
         $grandTotalKM = $payments->sum('amount_in_km');
         
+        // Determine overall plan status
+        $allPaid = $payments->every(fn($p) => $p->status === 'PAID');
+        $planStatus = $allPaid ? 'Plaćeno' : 'Neplaćeno';
+        $statusClass = $allPaid ? 'status-paid' : 'status-planned';
+        
         $rows = '';
         foreach ($payments as $payment) {
-            $statusClass = $payment->status === 'PAID' ? 'status-paid' : 'status-planned';
-            $statusText = $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaćeno';
             $amountClass = $payment->currency === 'KM' ? 'amount-km' : ($payment->currency === 'EUR' ? 'amount-eur' : 'amount-usd');
             $formattedAmount = number_format($payment->amount, 2, ',', '.');
             $formattedAmountKM = number_format($payment->amount_in_km, 2, ',', '.');
@@ -379,7 +382,6 @@ class PaymentPlanController extends Controller
                 <td>{$supplierName}</td>
                 <td>{$branchName}</td>
                 <td class=\"{$amountClass}\">{$formattedAmount} {$payment->currency}</td>
-                <td><span class=\"status {$statusClass}\">{$statusText}</span></td>
                 <td>{$formattedDate}</td>
                 <td class=\"amount-km\">{$formattedAmountKM} KM</td>
             </tr>";
@@ -401,34 +403,40 @@ class PaymentPlanController extends Controller
     <title>Plan plaćanja - {$plan->name}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f8fafc; font-size: 11px; }
-        .container { max-width: 100%; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
-        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 16px 20px; }
-        .header h1 { font-size: 16px; margin-bottom: 4px; }
-        .header p { opacity: 0.9; font-size: 10px; }
-        .meta { display: flex; gap: 20px; padding: 12px 20px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; }
-        .meta-item label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-        .meta-item value { display: block; font-size: 13px; font-weight: 600; color: #1e293b; margin-top: 2px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background: #f8fafc; font-size: 9px; }
+        .container { max-width: 100%; margin: 0 auto; background: white; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 10px 12px; }
+        .header h1 { font-size: 13px; margin-bottom: 2px; }
+        .header p { opacity: 0.9; font-size: 8px; line-height: 1.3; }
+        .header .status-badge { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 8px; font-weight: 500; margin-top: 3px; }
+        .status-paid { background: #dcfce7; color: #166534; }
+        .status-planned { background: #fef3c7; color: #92400e; }
+        .meta { display: flex; gap: 8px; padding: 8px 12px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .meta-item { flex: 1; min-width: 80px; }
+        .meta-item label { font-size: 7px; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; display: block; }
+        .meta-item value { display: block; font-size: 10px; font-weight: 600; color: #1e293b; margin-top: 1px; }
         .meta-item.km value { color: #3b82f6; }
         .meta-item.eur value { color: #10b981; }
         .meta-item.usd value { color: #9333ea; }
-        .content { padding: 16px 20px; }
-        table { width: 100%; border-collapse: collapse; font-size: 10px; }
-        th { background: #f8fafc; padding: 8px 10px; text-align: left; font-size: 9px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+        .content { padding: 8px 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 8px; table-layout: fixed; }
+        th { background: #f8fafc; padding: 5px 4px; text-align: left; font-size: 7px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; font-weight: 600; }
+        td { padding: 5px 4px; border-bottom: 1px solid #f1f5f9; word-wrap: break-word; overflow-wrap: break-word; vertical-align: top; }
         tr:hover { background: #f8fafc; }
-        .amount-km { color: #3b82f6; font-weight: 600; }
-        .amount-eur { color: #10b981; font-weight: 600; }
-        .amount-usd { color: #9333ea; font-weight: 600; }
-        .invoice { font-family: monospace; color: #374151; }
-        .status { padding: 2px 6px; border-radius: 10px; font-size: 9px; font-weight: 500; }
-        .status-paid { background: #dcfce7; color: #166534; }
-        .status-planned { background: #fef3c7; color: #92400e; }
-        .footer { padding: 12px 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 9px; }
+        .amount-km { color: #3b82f6; font-weight: 600; text-align: right; }
+        .amount-eur { color: #10b981; font-weight: 600; text-align: right; }
+        .amount-usd { color: #9333ea; font-weight: 600; text-align: right; }
+        .invoice { font-family: 'Courier New', monospace; color: #374151; font-size: 7px; width: 18%; }
+        .supplier { width: 28%; }
+        .branch { width: 20%; }
+        .amount { width: 14%; text-align: right; }
+        .date { width: 10%; text-align: center; font-size: 7px; }
+        .total { width: 10%; }
+        .footer { padding: 8px 12px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 7px; }
         @media print { 
-            body { padding: 10px; background: white; } 
+            body { padding: 5px; background: white; } 
             .container { box-shadow: none; border: 1px solid #e2e8f0; } 
-            @page { size: A4 portrait; margin: 10mm; }
+            @page { size: A4 portrait; margin: 8mm; }
         }
     </style>
 </head>
@@ -436,7 +444,8 @@ class PaymentPlanController extends Controller
     <div class="container">
         <div class="header">
             <h1>{$plan->name}</h1>
-            <p>Kreiran: {$createdAtFormatted} | {$description}</p>
+            <p>Kreiran: {$createdAtFormatted}{$description ? " | {$description}" : ""}</p>
+            <span class="status-badge {$statusClass}">Status: {$planStatus}</span>
         </div>
         <div class="meta">
             <div class="meta-item km">
@@ -464,13 +473,12 @@ class PaymentPlanController extends Controller
             <table>
                 <thead>
                     <tr>
-                        <th>Br. fakture</th>
-                        <th>Dobavljač</th>
-                        <th>Poslovnica</th>
-                        <th>Iznos</th>
-                        <th>Status</th>
-                        <th>Datum</th>
-                        <th>Ukupno KM</th>
+                        <th class="invoice">Br. fakture</th>
+                        <th class="supplier">Dobavljač</th>
+                        <th class="branch">Poslovnica</th>
+                        <th class="amount">Iznos</th>
+                        <th class="date">Datum</th>
+                        <th class="total">Ukupno KM</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -478,11 +486,10 @@ class PaymentPlanController extends Controller
                 </tbody>
                 <tfoot>
                     <tr style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 600;">
-                        <td colspan="3" style="text-align: right; padding: 10px;">UKUPNO:</td>
+                        <td colspan="3" style="text-align: right; padding: 6px 4px;">UKUPNO:</td>
                         <td></td>
                         <td></td>
-                        <td></td>
-                        <td class="amount-km" style="font-size: 12px;">{$grandTotalFormatted} KM</td>
+                        <td class="amount-km" style="font-size: 10px;">{$grandTotalFormatted} KM</td>
                     </tr>
                 </tfoot>
             </table>
