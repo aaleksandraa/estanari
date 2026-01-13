@@ -112,7 +112,7 @@ const handleRowClick = (event, payment) => {
                     <button v-if="currentPayment.status === 'PLANNED'" @click="handleMarkAsPaid(currentPayment.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-gray-50"><CheckCircleIcon class="h-4 w-4" /> Označi kao plaćeno</button>
                     <button v-if="currentPayment.status === 'PAID'" @click="handleMarkAsUnpaid(currentPayment.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-amber-600 hover:bg-gray-50"><XCircleIcon class="h-4 w-4" /> Vrati u neplaćeno</button>
                     <hr class="my-1" />
-                    <button @click="handleDeleteClick(currentPayment)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50"><TrashIcon class="h-4 w-4" /> Obriši</button>
+                    <button @click="handleDeleteClick(currentPayment)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50"><TrashIcon class="h-4 w-4" /> Obriši</button>
                 </template>
             </div>
         </div>

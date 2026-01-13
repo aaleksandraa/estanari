@@ -153,9 +153,9 @@ const getDateFilterLabel = (filter) => {
                                     class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                                     <EllipsisHorizontalIcon class="h-5 w-5 text-gray-400" />
                                 </button>
-                                <div v-if="openMenuId === plan.id" @click="openMenuId = null" class="fixed inset-0 z-10"></div>
+                                <div v-if="openMenuId === plan.id" @click="openMenuId = null" class="fixed inset-0 z-30"></div>
                                 <div v-if="openMenuId === plan.id" 
-                                    class="absolute right-0 mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                                    class="absolute right-0 mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
                                     <button @click="viewPlan(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                         <EyeIcon class="h-4 w-4" /> Pregledaj
                                     </button>
@@ -172,7 +172,7 @@ const getDateFilterLabel = (filter) => {
                                     </button>
                                     <hr class="my-1" />
                                     <button v-if="page.props.auth.user?.canModify" @click="openDeleteConfirm(plan)" 
-                                        class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50">
+                                        class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                         <TrashIcon class="h-4 w-4" /> Obriši
                                     </button>
                                 </div>

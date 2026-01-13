@@ -223,8 +223,8 @@ const submitImport = () => {
                                 <button @click="openMenuId = openMenuId === supplier.id ? null : supplier.id" class="p-1 rounded hover:bg-gray-100">
                                     <EllipsisHorizontalIcon class="h-5 w-5 text-gray-400" />
                                 </button>
-                                <div v-if="openMenuId === supplier.id" @click="openMenuId = null" class="fixed inset-0 z-10"></div>
-                                <div v-if="openMenuId === supplier.id" class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                                <div v-if="openMenuId === supplier.id" @click="openMenuId = null" class="fixed inset-0 z-30"></div>
+                                <div v-if="openMenuId === supplier.id" class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
                                     <button v-if="page.props.auth.user?.canModify" @click="openEditSupplierModal(supplier)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                         <PencilIcon class="h-4 w-4" /> Uredi
                                     </button>
@@ -233,7 +233,7 @@ const submitImport = () => {
                                         <template v-else><CheckIcon class="h-4 w-4" /> Aktiviraj</template>
                                     </button>
                                     <hr v-if="page.props.auth.user?.canModify" class="my-1" />
-                                    <button v-if="page.props.auth.user?.canModify" @click="deleteSupplier(supplier)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-50">
+                                    <button v-if="page.props.auth.user?.canModify" @click="deleteSupplier(supplier)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                         <TrashIcon class="h-4 w-4" /> Obriši
                                     </button>
                                 </div>
@@ -272,8 +272,8 @@ const submitImport = () => {
                                         <button @click.stop="openBranchMenuId = openBranchMenuId === branch.id ? null : branch.id" class="p-1 rounded hover:bg-gray-100">
                                             <EllipsisHorizontalIcon class="h-4 w-4 text-gray-400" />
                                         </button>
-                                        <div v-if="openBranchMenuId === branch.id" @click="openBranchMenuId = null" class="fixed inset-0 z-10"></div>
-                                        <div v-if="openBranchMenuId === branch.id" class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                                        <div v-if="openBranchMenuId === branch.id" @click="openBranchMenuId = null" class="fixed inset-0 z-30"></div>
+                                        <div v-if="openBranchMenuId === branch.id" class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
                                             <button @click="openEditBranchModal(branch)" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
                                                 <PencilIcon class="h-4 w-4" /> Uredi
                                             </button>
@@ -282,7 +282,7 @@ const submitImport = () => {
                                                 <template v-else><CheckIcon class="h-4 w-4" /> Aktiviraj</template>
                                             </button>
                                             <hr class="my-1" />
-                                            <button @click="deleteBranch(branch)" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-gray-50">
+                                            <button @click="deleteBranch(branch)" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
                                                 <TrashIcon class="h-4 w-4" /> Obriši
                                             </button>
                                         </div>
