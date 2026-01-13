@@ -394,6 +394,7 @@ class PaymentPlanController extends Controller
         $createdAtFormatted = $plan->created_at->format('d.m.Y H:i');
         $exportDateFormatted = $plan->created_at->format('d.m.Y');
         $description = $plan->description ?? '';
+        $descriptionText = $description ? " | {$description}" : '';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -444,7 +445,7 @@ class PaymentPlanController extends Controller
     <div class="container">
         <div class="header">
             <h1>{$plan->name}</h1>
-            <p>Kreiran: {$createdAtFormatted}{$description ? " | {$description}" : ""}</p>
+            <p>Kreiran: {$createdAtFormatted}{$descriptionText}</p>
             <span class="status-badge {$statusClass}">Status: {$planStatus}</span>
         </div>
         <div class="meta">
