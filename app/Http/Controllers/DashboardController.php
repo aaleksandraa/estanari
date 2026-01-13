@@ -247,11 +247,11 @@ class DashboardController extends Controller
         $totalEUR = $payments->where('currency', 'EUR')->sum('amount');
         $totalUSD = $payments->where('currency', 'USD')->sum('amount');
         
-        // Check if there are any EUR or USD payments
-        $hasEurOrUsd = $payments->contains(fn($p) => in_array($p->currency, ['EUR', 'USD']));
+        // Always show "Ukupno KM" column for consistency
+        $hasEurOrUsd = true; // Always true to show the column
         $grandTotalKM = $payments->sum('amount_in_km');
 
-        $colCount = $hasEurOrUsd ? 8 : 7;
+        $colCount = 8; // Always 8 columns
         
         $excel = new ExcelExportService();
         
@@ -266,18 +266,12 @@ class DashboardController extends Controller
             'Ukupno EUR' => number_format($totalEUR, 2, ',', '.') . ' EUR',
             'Ukupno USD' => number_format($totalUSD, 2, ',', '.') . ' USD',
             'Broj stavki' => $payments->count(),
+            'UKUPNO (KM)' => number_format($grandTotalKM, 2, ',', '.') . ' KM',
         ];
-        
-        if ($hasEurOrUsd) {
-            $summaryData['UKUPNO (KM)'] = number_format($grandTotalKM, 2, ',', '.') . ' KM';
-        }
 
         $excel->setSummaryRow($summaryData, 3, $colCount);
 
-        $headers = ['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum'];
-        if ($hasEurOrUsd) {
-            $headers[] = 'Ukupno KM';
-        }
+        $headers = ['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum', 'Ukupno KM'];
         $excel->setHeaders($headers, 5);
 
         $data = [];
@@ -290,34 +284,23 @@ class DashboardController extends Controller
                 'currency' => $payment->currency,
                 'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 'date' => $payment->planned_date->format('d.m.Y'),
+                'amount_km' => $payment->amount_in_km,
             ];
-            
-            if ($hasEurOrUsd) {
-                $row['amount_km'] = $payment->amount_in_km;
-            }
             
             $data[] = $row;
         }
 
-        $columnTypes = ['amount' => 'currency'];
-        if ($hasEurOrUsd) {
-            $columnTypes['amount_km'] = 'currency';
-        }
+        $columnTypes = ['amount' => 'currency', 'amount_km' => 'currency'];
 
         $excel->setData($data, 6, $columnTypes);
         
         // Add totals row at the bottom
         $totalsRow = 6 + count($data);
-        $totalsData = ['', '', 'UKUPNO:', '', '', '', ''];
-        if ($hasEurOrUsd) {
-            $totalsData[] = $grandTotalKM;
-        }
+        $totalsData = ['', '', 'UKUPNO:', '', '', '', '', $grandTotalKM];
         $excel->setTotalsRow($totalsData, $totalsRow, $colCount);
         
         // Format the total amount cell
-        if ($hasEurOrUsd) {
-            $excel->getSheet()->getStyle('H' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
-        }
+        $excel->getSheet()->getStyle('H' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
         
         $excel->autoSizeColumns($colCount);
 
