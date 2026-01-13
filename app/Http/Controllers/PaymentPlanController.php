@@ -377,7 +377,7 @@ class PaymentPlanController extends Controller
         foreach ($payments as $payment) {
             $amountClass = $payment->currency === 'KM' ? 'amount-km' : ($payment->currency === 'EUR' ? 'amount-eur' : 'amount-usd');
             $formattedAmount = number_format($payment->amount, 2, ',', '.');
-            $formattedAmountKM = number_format($payment->amount_in_km, 2, ',', '.');
+            $formattedAmountKM = number_format($payment->amount_in_km, 2, ',', '.'); // Without KM suffix
             $formattedDate = $payment->planned_date->format('d.m.Y');
             $supplierName = $payment->supplier->name ?? '-';
             $branchName = $payment->branch->name ?? '-';
@@ -391,7 +391,7 @@ class PaymentPlanController extends Controller
                 <td>{$branchName}</td>
                 <td class=\"{$amountClass}\">{$formattedAmount} {$payment->currency}</td>
                 <td>{$formattedDate}</td>
-                <td class=\"amount-km\">{$formattedAmountKM} KM</td>
+                <td class=\"amount-km\">{$formattedAmountKM}</td>
             </tr>";
         }
 
@@ -435,13 +435,13 @@ class PaymentPlanController extends Controller
         .amount-km { color: #3b82f6; font-weight: 600; text-align: right; }
         .amount-eur { color: #10b981; font-weight: 600; text-align: right; }
         .amount-usd { color: #9333ea; font-weight: 600; text-align: right; }
-        .invoice { font-family: 'Courier New', monospace; color: #374151; font-size: 8px; width: 12%; }
-        .description { width: 25%; font-size: 8px; color: #4b5563; }
+        .invoice { font-family: 'Courier New', monospace; color: #374151; font-size: 8px; width: 10%; }
+        .description { width: 22%; font-size: 8px; color: #4b5563; }
         .supplier { width: 20%; }
-        .branch { width: 15%; }
+        .branch { width: 18%; }
         .amount { width: 12%; text-align: right; }
         .date { width: 8%; text-align: center; font-size: 8px; }
-        .total { width: 8%; }
+        .total { width: 10%; white-space: nowrap; }
         .footer { padding: 8px 12px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 8px; }
         @media print { 
             body { padding: 5px; background: white; } 
@@ -500,7 +500,7 @@ class PaymentPlanController extends Controller
                         <td colspan="4" style="text-align: right; padding: 6px 4px;">UKUPNO:</td>
                         <td></td>
                         <td></td>
-                        <td class="amount-km" style="font-size: 11px;">{$grandTotalFormatted} KM</td>
+                        <td class="amount-km" style="font-size: 11px; white-space: nowrap;">{$grandTotalFormatted} KM</td>
                     </tr>
                 </tfoot>
             </table>
