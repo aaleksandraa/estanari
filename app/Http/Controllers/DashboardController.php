@@ -251,7 +251,7 @@ class DashboardController extends Controller
         $hasEurOrUsd = true; // Always true to show the column
         $grandTotalKM = $payments->sum('amount_in_km');
 
-        $colCount = 8; // Always 8 columns
+        $colCount = 9; // 9 columns with description
         
         $excel = new ExcelExportService();
         
@@ -271,13 +271,14 @@ class DashboardController extends Controller
 
         $excel->setSummaryRow($summaryData, 3, $colCount);
 
-        $headers = ['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum', 'Ukupno KM'];
+        $headers = ['Br. fakture', 'Opis', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum', 'Ukupno KM'];
         $excel->setHeaders($headers, 5);
 
         $data = [];
         foreach ($payments as $payment) {
             $row = [
                 'invoice' => $payment->invoice_number ?? '-',
+                'description' => $payment->description ?? '-',
                 'supplier' => $payment->supplier->name ?? '-',
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
@@ -296,11 +297,11 @@ class DashboardController extends Controller
         
         // Add totals row at the bottom
         $totalsRow = 6 + count($data);
-        $totalsData = ['', '', 'UKUPNO:', '', '', '', '', $grandTotalKM];
+        $totalsData = ['', '', '', 'UKUPNO:', '', '', '', '', $grandTotalKM];
         $excel->setTotalsRow($totalsData, $totalsRow, $colCount);
         
         // Format the total amount cell
-        $excel->getSheet()->getStyle('H' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
+        $excel->getSheet()->getStyle('I' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
         
         $excel->autoSizeColumns($colCount);
 

@@ -303,7 +303,7 @@ class PaymentPlanController extends Controller
         // Calculate grand total in KM
         $grandTotalKM = $payments->sum('amount_in_km');
         
-        $colCount = 8; // Always 8 columns
+        $colCount = 9; // 9 columns with description
         
         $excel->setTitle(
             "Plan plaćanja: {$plan->name}",
@@ -321,13 +321,14 @@ class PaymentPlanController extends Controller
 
         $excel->setSummaryRow($summaryData, 3, $colCount);
 
-        $headers = ['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum', 'Ukupno KM'];
+        $headers = ['Br. fakture', 'Opis', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum', 'Ukupno KM'];
         $excel->setHeaders($headers, 5);
 
         $data = [];
         foreach ($payments as $payment) {
             $row = [
                 'invoice' => $payment->invoice_number ?? '-',
+                'description' => $payment->description ?? '-',
                 'supplier' => $payment->supplier->name ?? ($payment->description ?? '-'),
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
@@ -346,11 +347,11 @@ class PaymentPlanController extends Controller
         
         // Add totals row at the bottom
         $totalsRow = 6 + count($data);
-        $totalsData = ['', '', 'UKUPNO:', '', '', '', '', $grandTotalKM];
+        $totalsData = ['', '', '', 'UKUPNO:', '', '', '', '', $grandTotalKM];
         $excel->setTotalsRow($totalsData, $totalsRow, $colCount);
         
         // Format the total amount cell
-        $excel->getSheet()->getStyle('H' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
+        $excel->getSheet()->getStyle('I' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
         
         $excel->autoSizeColumns($colCount);
 
@@ -367,18 +368,25 @@ class PaymentPlanController extends Controller
         $planStatus = $allPaid ? 'Plaćeno' : 'Neplaćeno';
         $statusClass = $allPaid ? 'status-paid' : 'status-planned';
         
+        // Check if we need landscape mode (if any description is longer than 50 chars)
+        $needsLandscape = $payments->contains(fn($p) => strlen($p->description ?? '') > 50);
+        $orientation = $needsLandscape ? 'landscape' : 'portrait';
+        $fontSize = '10px'; // Standard 10px as requested
+        
         $rows = '';
         foreach ($payments as $payment) {
             $amountClass = $payment->currency === 'KM' ? 'amount-km' : ($payment->currency === 'EUR' ? 'amount-eur' : 'amount-usd');
             $formattedAmount = number_format($payment->amount, 2, ',', '.');
             $formattedAmountKM = number_format($payment->amount_in_km, 2, ',', '.');
             $formattedDate = $payment->planned_date->format('d.m.Y');
-            $supplierName = $payment->supplier->name ?? ($payment->description ?? '-');
+            $supplierName = $payment->supplier->name ?? '-';
             $branchName = $payment->branch->name ?? '-';
             $invoiceNumber = $payment->invoice_number ?? '-';
+            $description = $payment->description ?? '-';
             
             $rows .= "<tr>
                 <td class=\"invoice\">{$invoiceNumber}</td>
+                <td class=\"description\">{$description}</td>
                 <td>{$supplierName}</td>
                 <td>{$branchName}</td>
                 <td class=\"{$amountClass}\">{$formattedAmount} {$payment->currency}</td>
@@ -393,8 +401,8 @@ class PaymentPlanController extends Controller
         $grandTotalFormatted = number_format($grandTotalKM, 2, ',', '.');
         $createdAtFormatted = $plan->created_at->format('d.m.Y H:i');
         $exportDateFormatted = $plan->created_at->format('d.m.Y');
-        $description = $plan->description ?? '';
-        $descriptionText = $description ? " | {$description}" : '';
+        $planDescription = $plan->description ?? '';
+        $descriptionText = $planDescription ? " | {$planDescription}" : '';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -404,40 +412,41 @@ class PaymentPlanController extends Controller
     <title>Plan plaćanja - {$plan->name}</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background: #f8fafc; font-size: 9px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background: #f8fafc; font-size: {$fontSize}; }
         .container { max-width: 100%; margin: 0 auto; background: white; border-radius: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden; }
         .header { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 10px 12px; }
-        .header h1 { font-size: 13px; margin-bottom: 2px; }
-        .header p { opacity: 0.9; font-size: 8px; line-height: 1.3; }
-        .header .status-badge { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 8px; font-weight: 500; margin-top: 3px; }
+        .header h1 { font-size: 14px; margin-bottom: 2px; }
+        .header p { opacity: 0.9; font-size: 9px; line-height: 1.3; }
+        .header .status-badge { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 9px; font-weight: 500; margin-top: 3px; }
         .status-paid { background: #dcfce7; color: #166534; }
         .status-planned { background: #fef3c7; color: #92400e; }
         .meta { display: flex; gap: 8px; padding: 8px 12px; background: #f1f5f9; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
         .meta-item { flex: 1; min-width: 80px; }
-        .meta-item label { font-size: 7px; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; display: block; }
-        .meta-item value { display: block; font-size: 10px; font-weight: 600; color: #1e293b; margin-top: 1px; }
+        .meta-item label { font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; display: block; }
+        .meta-item value { display: block; font-size: 11px; font-weight: 600; color: #1e293b; margin-top: 1px; }
         .meta-item.km value { color: #3b82f6; }
         .meta-item.eur value { color: #10b981; }
         .meta-item.usd value { color: #9333ea; }
         .content { padding: 8px 12px; }
-        table { width: 100%; border-collapse: collapse; font-size: 8px; table-layout: fixed; }
-        th { background: #f8fafc; padding: 5px 4px; text-align: left; font-size: 7px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
+        th { background: #f8fafc; padding: 5px 4px; text-align: left; font-size: 8px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; font-weight: 600; }
         td { padding: 5px 4px; border-bottom: 1px solid #f1f5f9; word-wrap: break-word; overflow-wrap: break-word; vertical-align: top; }
         tr:hover { background: #f8fafc; }
         .amount-km { color: #3b82f6; font-weight: 600; text-align: right; }
         .amount-eur { color: #10b981; font-weight: 600; text-align: right; }
         .amount-usd { color: #9333ea; font-weight: 600; text-align: right; }
-        .invoice { font-family: 'Courier New', monospace; color: #374151; font-size: 7px; width: 18%; }
-        .supplier { width: 28%; }
-        .branch { width: 20%; }
-        .amount { width: 14%; text-align: right; }
-        .date { width: 10%; text-align: center; font-size: 7px; }
-        .total { width: 10%; }
-        .footer { padding: 8px 12px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 7px; }
+        .invoice { font-family: 'Courier New', monospace; color: #374151; font-size: 8px; width: 12%; }
+        .description { width: 25%; font-size: 8px; color: #4b5563; }
+        .supplier { width: 20%; }
+        .branch { width: 15%; }
+        .amount { width: 12%; text-align: right; }
+        .date { width: 8%; text-align: center; font-size: 8px; }
+        .total { width: 8%; }
+        .footer { padding: 8px 12px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 8px; }
         @media print { 
             body { padding: 5px; background: white; } 
             .container { box-shadow: none; border: 1px solid #e2e8f0; } 
-            @page { size: A4 portrait; margin: 8mm; }
+            @page { size: A4 {$orientation}; margin: 8mm; }
         }
     </style>
 </head>
@@ -475,6 +484,7 @@ class PaymentPlanController extends Controller
                 <thead>
                     <tr>
                         <th class="invoice">Br. fakture</th>
+                        <th class="description">Opis</th>
                         <th class="supplier">Dobavljač</th>
                         <th class="branch">Poslovnica</th>
                         <th class="amount">Iznos</th>
@@ -487,10 +497,10 @@ class PaymentPlanController extends Controller
                 </tbody>
                 <tfoot>
                     <tr style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 600;">
-                        <td colspan="3" style="text-align: right; padding: 6px 4px;">UKUPNO:</td>
+                        <td colspan="4" style="text-align: right; padding: 6px 4px;">UKUPNO:</td>
                         <td></td>
                         <td></td>
-                        <td class="amount-km" style="font-size: 10px;">{$grandTotalFormatted} KM</td>
+                        <td class="amount-km" style="font-size: 11px;">{$grandTotalFormatted} KM</td>
                     </tr>
                 </tfoot>
             </table>
