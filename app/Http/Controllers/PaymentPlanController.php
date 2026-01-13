@@ -431,7 +431,9 @@ class PaymentPlanController extends Controller
         table { width: 100%; border-collapse: collapse; font-size: 9px; table-layout: fixed; }
         th { background: #f8fafc; padding: 5px 4px; text-align: left; font-size: 8px; text-transform: uppercase; color: #64748b; border-bottom: 2px solid #e2e8f0; font-weight: 600; }
         td { padding: 5px 4px; border-bottom: 1px solid #f1f5f9; word-wrap: break-word; overflow-wrap: break-word; vertical-align: top; }
-        tr:hover { background: #f8fafc; }
+        tbody tr:nth-child(even) { background: #f9fafb; }
+        tbody tr:nth-child(odd) { background: #ffffff; }
+        tr:hover { background: #f1f5f9 !important; }
         .amount-km { color: #3b82f6; font-weight: 600; text-align: right; }
         .amount-eur { color: #10b981; font-weight: 600; text-align: right; }
         .amount-usd { color: #9333ea; font-weight: 600; text-align: right; }
