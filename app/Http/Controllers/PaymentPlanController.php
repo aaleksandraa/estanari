@@ -262,12 +262,19 @@ class PaymentPlanController extends Controller
 
     public function exportPdf(PaymentPlan $plan): Response
     {
+        $exchangeRates = Setting::getExchangeRates();
+        
         $payments = Payment::with(['supplier:id,name', 'branch:id,name'])
             ->whereIn('id', $plan->payment_ids ?? [])
-            ->orderBy('planned_date')
-            ->get();
+            ->get()
+            ->map(function ($payment) use ($exchangeRates) {
+                $payment->amount_in_km = $this->convertToKM($payment->amount, $payment->currency, $exchangeRates);
+                return $payment;
+            })
+            ->sortByDesc('amount_in_km')
+            ->values();
 
-        $html = $this->generatePdfHtml($plan, $payments);
+        $html = $this->generatePdfHtml($plan, $payments, $exchangeRates);
 
         return response($html)
             ->header('Content-Type', 'text/html; charset=UTF-8')
@@ -351,14 +358,17 @@ class PaymentPlanController extends Controller
         return $excel->download($filename);
     }
 
-    private function generatePdfHtml(PaymentPlan $plan, $payments): string
+    private function generatePdfHtml(PaymentPlan $plan, $payments, array $exchangeRates): string
     {
+        $grandTotalKM = $payments->sum('amount_in_km');
+        
         $rows = '';
         foreach ($payments as $payment) {
             $statusClass = $payment->status === 'PAID' ? 'status-paid' : 'status-planned';
             $statusText = $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaćeno';
             $amountClass = $payment->currency === 'KM' ? 'amount-km' : ($payment->currency === 'EUR' ? 'amount-eur' : 'amount-usd');
             $formattedAmount = number_format($payment->amount, 2, ',', '.');
+            $formattedAmountKM = number_format($payment->amount_in_km, 2, ',', '.');
             $formattedDate = $payment->planned_date->format('d.m.Y');
             $supplierName = $payment->supplier->name ?? ($payment->description ?? '-');
             $branchName = $payment->branch->name ?? '-';
@@ -371,12 +381,14 @@ class PaymentPlanController extends Controller
                 <td class=\"{$amountClass}\">{$formattedAmount} {$payment->currency}</td>
                 <td><span class=\"status {$statusClass}\">{$statusText}</span></td>
                 <td>{$formattedDate}</td>
+                <td class=\"amount-km\">{$formattedAmountKM} KM</td>
             </tr>";
         }
 
         $totalKmFormatted = number_format($plan->total_km, 2, ',', '.');
         $totalEurFormatted = number_format($plan->total_eur, 2, ',', '.');
         $totalUsdFormatted = number_format($plan->total_usd ?? 0, 2, ',', '.');
+        $grandTotalFormatted = number_format($grandTotalKM, 2, ',', '.');
         $createdAtFormatted = $plan->created_at->format('d.m.Y H:i');
         $exportDateFormatted = $plan->created_at->format('d.m.Y');
         $description = $plan->description ?? '';
@@ -443,6 +455,10 @@ class PaymentPlanController extends Controller
                 <label>Broj plaćanja</label>
                 <value>{$plan->payment_count}</value>
             </div>
+            <div class="meta-item km">
+                <label>UKUPNO (KM)</label>
+                <value>{$grandTotalFormatted} KM</value>
+            </div>
         </div>
         <div class="content">
             <table>
@@ -454,11 +470,21 @@ class PaymentPlanController extends Controller
                         <th>Iznos</th>
                         <th>Status</th>
                         <th>Datum</th>
+                        <th>Ukupno KM</th>
                     </tr>
                 </thead>
                 <tbody>
                     {$rows}
                 </tbody>
+                <tfoot>
+                    <tr style="background: #f8fafc; border-top: 2px solid #e2e8f0; font-weight: 600;">
+                        <td colspan="3" style="text-align: right; padding: 10px;">UKUPNO:</td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="amount-km" style="font-size: 12px;">{$grandTotalFormatted} KM</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         <div class="footer">

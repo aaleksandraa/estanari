@@ -15,6 +15,7 @@ const props = defineProps({ plans: Array });
 const page = usePage();
 const openMenuId = ref(null);
 const processing = ref(false);
+const menuButtonRefs = ref({});
 
 // Confirm modal state
 const showConfirmModal = ref(false);
@@ -30,6 +31,27 @@ const formatDateTime = (dateStr) => {
 
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+};
+
+const getMenuPosition = (planId) => {
+    const button = document.querySelector(`[data-menu-button="${planId}"]`);
+    if (!button) return { top: '0px', left: '0px' };
+    
+    const rect = button.getBoundingClientRect();
+    let top = rect.bottom + 4;
+    let left = rect.right - 208; // 208px = 52 * 4 (w-52)
+    
+    // Check if menu would go off bottom of screen
+    if (top + 250 > window.innerHeight) {
+        top = rect.top - 254; // Position above button
+    }
+    
+    // Check if menu would go off left of screen
+    if (left < 8) {
+        left = 8;
+    }
+    
+    return { top: top + 'px', left: left + 'px' };
 };
 
 const viewPlan = (plan) => {
@@ -102,6 +124,11 @@ const exportPdf = (plan) => {
     openMenuId.value = null;
 };
 
+const exportExcel = (plan) => {
+    window.location.href = route('plans.export-excel', plan.id);
+    openMenuId.value = null;
+};
+
 const getDateFilterLabel = (filter) => {
     const labels = { today: 'Danas', tomorrow: 'Sutra', '3days': '3 dana', '7days': '7 dana', period: 'Period', all: 'Svi', custom: 'Prilagođeno' };
     return labels[filter] || filter;
@@ -149,33 +176,12 @@ const getDateFilterLabel = (filter) => {
                             </div>
                             <!-- Menu -->
                             <div class="relative ml-2" @click.stop>
-                                <button @click="openMenuId = openMenuId === plan.id ? null : plan.id" 
+                                <button 
+                                    :data-menu-button="plan.id"
+                                    @click="openMenuId = openMenuId === plan.id ? null : plan.id" 
                                     class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                                     <EllipsisHorizontalIcon class="h-5 w-5 text-gray-400" />
                                 </button>
-                                <div v-if="openMenuId === plan.id" @click="openMenuId = null" class="fixed inset-0 z-30"></div>
-                                <div v-if="openMenuId === plan.id" 
-                                    class="absolute right-0 mt-1 w-52 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
-                                    <button @click="viewPlan(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                        <EyeIcon class="h-4 w-4" /> Pregledaj
-                                    </button>
-                                    <button v-if="!plan.is_paid && page.props.auth.user?.canModify" @click="openMarkAsPaidConfirm(plan)" 
-                                        class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
-                                        <CheckCircleIcon class="h-4 w-4" /> Označi kao plaćeno
-                                    </button>
-                                    <hr class="my-1" />
-                                    <button @click="exportCsv(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                        <ArrowDownTrayIcon class="h-4 w-4" /> Export CSV
-                                    </button>
-                                    <button @click="exportPdf(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                        <DocumentArrowDownIcon class="h-4 w-4" /> Export PDF
-                                    </button>
-                                    <hr class="my-1" />
-                                    <button v-if="page.props.auth.user?.canModify" @click="openDeleteConfirm(plan)" 
-                                        class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                        <TrashIcon class="h-4 w-4" /> Obriši
-                                    </button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -214,6 +220,41 @@ const getDateFilterLabel = (filter) => {
                 </div>
             </div>
         </div>
+
+        <!-- Dropdown Menu with Teleport -->
+        <Teleport to="body">
+            <div v-if="openMenuId !== null">
+                <div @click="openMenuId = null" class="fixed inset-0 z-30"></div>
+                <div v-for="plan in plans" :key="'menu-' + plan.id">
+                    <div v-if="openMenuId === plan.id" 
+                        class="fixed w-52 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-40"
+                        :style="getMenuPosition(plan.id)">
+                        <button @click="viewPlan(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <EyeIcon class="h-4 w-4" /> Pregledaj
+                        </button>
+                        <button v-if="!plan.is_paid && page.props.auth.user?.canModify" @click="openMarkAsPaidConfirm(plan)" 
+                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
+                            <CheckCircleIcon class="h-4 w-4" /> Označi kao plaćeno
+                        </button>
+                        <hr class="my-1" />
+                        <button @click="exportCsv(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <ArrowDownTrayIcon class="h-4 w-4" /> Export CSV
+                        </button>
+                        <button @click="exportPdf(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <DocumentArrowDownIcon class="h-4 w-4" /> Export PDF
+                        </button>
+                        <button @click="exportExcel(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <DocumentArrowDownIcon class="h-4 w-4" /> Export Excel
+                        </button>
+                        <hr class="my-1" />
+                        <button v-if="page.props.auth.user?.canModify" @click="openDeleteConfirm(plan)" 
+                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <TrashIcon class="h-4 w-4" /> Obriši
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </Teleport>
 
         <!-- Confirm Modal -->
         <ConfirmModal
