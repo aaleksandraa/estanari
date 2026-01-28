@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch, onMounted } from 'vue';
 import { router, usePage, useForm } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import Header from '@/Components/Header.vue';
@@ -8,7 +8,7 @@ import { format, parseISO } from 'date-fns';
 import {
     MagnifyingGlassIcon, PlusIcon, BuildingOffice2Icon, EnvelopeIcon, PhoneIcon, MapPinIcon,
     EllipsisHorizontalIcon, EyeIcon, PencilIcon, TrashIcon, ChevronRightIcon, ArrowDownTrayIcon,
-    CheckIcon, XMarkIcon, ArrowUpTrayIcon, DocumentArrowDownIcon
+    CheckIcon, XMarkIcon, ArrowUpTrayIcon, DocumentArrowDownIcon, Squares2X2Icon, ListBulletIcon
 } from '@heroicons/vue/24/outline';
 import { useTranslations } from '@/composables/useTranslations';
 
@@ -21,6 +21,30 @@ const searchQuery = ref(props.search || '');
 const expandedSupplier = ref(null);
 const openMenuId = ref(null);
 const openBranchMenuId = ref(null);
+const viewMode = ref('grid'); // 'grid' or 'list'
+
+// Load view mode from localStorage on mount
+onMounted(() => {
+    const savedViewMode = localStorage.getItem('suppliers_view_mode');
+    if (savedViewMode) {
+        viewMode.value = savedViewMode;
+    }
+});
+
+// Watch for search query changes and trigger search automatically
+let searchTimeout = null;
+watch(searchQuery, (newValue) => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        router.get(route('suppliers.index'), { search: newValue }, { preserveState: true, preserveScroll: true });
+    }, 300); // 300ms debounce
+});
+
+// Toggle view mode and save to localStorage
+const toggleViewMode = (mode) => {
+    viewMode.value = mode;
+    localStorage.setItem('suppliers_view_mode', mode);
+};
 
 // Modals
 const showSupplierModal = ref(false);
@@ -185,9 +209,28 @@ const submitImport = () => {
         <div class="p-6 space-y-6">
             <!-- Search & Actions -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div class="relative w-full sm:w-96">
-                    <MagnifyingGlassIcon class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <input v-model="searchQuery" @keyup.enter="handleSearch" type="search" :placeholder="__('search')" class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg" />
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <div class="relative flex-1 sm:w-96">
+                        <MagnifyingGlassIcon class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <input v-model="searchQuery" type="search" :placeholder="__('search')" class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg" />
+                    </div>
+                    <!-- View Mode Toggle -->
+                    <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+                        <button 
+                            @click="toggleViewMode('grid')" 
+                            :class="['p-2 rounded transition-colors', viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700']"
+                            title="Grid prikaz"
+                        >
+                            <Squares2X2Icon class="h-4 w-4" />
+                        </button>
+                        <button 
+                            @click="toggleViewMode('list')" 
+                            :class="['p-2 rounded transition-colors', viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700']"
+                            title="Lista prikaz"
+                        >
+                            <ListBulletIcon class="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
                 <div class="flex items-center gap-2">
                     <button v-if="page.props.auth.user?.canModify" @click="openImportModal" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100">
@@ -205,8 +248,8 @@ const submitImport = () => {
                 </div>
             </div>
 
-            <!-- Suppliers Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <!-- Suppliers Grid View -->
+            <div v-if="viewMode === 'grid'" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div v-for="supplier in suppliers" :key="supplier.id" class="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow">
                     <div class="p-5">
                         <div class="flex items-start justify-between">
@@ -300,6 +343,129 @@ const submitImport = () => {
                         <p class="text-xs text-gray-500">{{ __('added') }}: {{ format(parseISO(supplier.created_at), 'dd.MM.yyyy') }}</p>
                     </div>
                 </div>
+            </div>
+
+            <!-- Suppliers List View -->
+            <div v-if="viewMode === 'list'" class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ __('supplier') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ __('contact') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ __('branches') }}</th>
+                            <th class="px-6 py-3 text-center text-xs font-semibold uppercase text-gray-500">{{ __('status') }}</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold uppercase text-gray-500">{{ __('added') }}</th>
+                            <th class="w-12 px-6 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <template v-for="supplier in suppliers" :key="supplier.id">
+                            <!-- Supplier Row -->
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 flex-shrink-0">
+                                            <BuildingOffice2Icon class="h-5 w-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900">{{ supplier.name }}</p>
+                                            <p v-if="supplier.address" class="text-xs text-gray-500 mt-0.5">{{ supplier.address }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="space-y-1">
+                                        <p v-if="supplier.email" class="text-sm text-gray-600 flex items-center gap-1.5">
+                                            <EnvelopeIcon class="h-3.5 w-3.5 text-gray-400" />
+                                            {{ supplier.email }}
+                                        </p>
+                                        <p v-if="supplier.phone" class="text-sm text-gray-600 flex items-center gap-1.5">
+                                            <PhoneIcon class="h-3.5 w-3.5 text-gray-400" />
+                                            {{ supplier.phone }}
+                                        </p>
+                                        <p v-if="!supplier.email && !supplier.phone" class="text-sm text-gray-400">-</p>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button @click="toggleExpand(supplier.id)" class="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
+                                        <ChevronRightIcon :class="['h-4 w-4 transition-transform', expandedSupplier === supplier.id && 'rotate-90']" />
+                                        {{ supplier.branches?.length || 0 }}
+                                    </button>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <span :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', supplier.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
+                                        {{ supplier.is_active ? __('active') : __('inactive') }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="text-sm text-gray-500">{{ format(parseISO(supplier.created_at), 'dd.MM.yyyy') }}</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="relative">
+                                        <button @click="openMenuId = openMenuId === supplier.id ? null : supplier.id" class="p-1 rounded hover:bg-gray-100">
+                                            <EllipsisHorizontalIcon class="h-5 w-5 text-gray-400" />
+                                        </button>
+                                        <div v-if="openMenuId === supplier.id" @click="openMenuId = null" class="fixed inset-0 z-30"></div>
+                                        <div v-if="openMenuId === supplier.id" class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
+                                            <button v-if="page.props.auth.user?.canModify" @click="openEditSupplierModal(supplier)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                                <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
+                                            </button>
+                                            <button v-if="page.props.auth.user?.canModify" @click="openNewBranchModal(supplier.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-gray-50">
+                                                <PlusIcon class="h-4 w-4" /> {{ __('add_branch') }}
+                                            </button>
+                                            <button v-if="page.props.auth.user?.canModify" @click="toggleSupplierStatus(supplier)" :class="['w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50', supplier.is_active ? 'text-orange-600' : 'text-green-600']">
+                                                <template v-if="supplier.is_active"><XMarkIcon class="h-4 w-4" /> {{ __('deactivate') }}</template>
+                                                <template v-else><CheckIcon class="h-4 w-4" /> {{ __('activate') }}</template>
+                                            </button>
+                                            <hr v-if="page.props.auth.user?.canModify" class="my-1" />
+                                            <button v-if="page.props.auth.user?.canModify" @click="deleteSupplier(supplier)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                                <TrashIcon class="h-4 w-4" /> {{ __('delete') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <!-- Branches Expanded Row -->
+                            <tr v-if="expandedSupplier === supplier.id && supplier.branches?.length > 0" class="bg-gray-50">
+                                <td colspan="6" class="px-6 py-4">
+                                    <div class="ml-14 space-y-2">
+                                        <p class="text-xs font-semibold text-gray-500 uppercase mb-3">{{ __('branches') }}</p>
+                                        <div v-for="branch in supplier.branches" :key="branch.id" class="flex items-center justify-between bg-white rounded-lg p-3 border border-gray-200">
+                                            <div class="flex-1">
+                                                <p class="font-medium text-sm text-gray-900">{{ branch.name }}</p>
+                                                <p v-if="branch.address" class="text-xs text-gray-500 mt-0.5">{{ branch.address }}</p>
+                                            </div>
+                                            <div class="flex items-center gap-3">
+                                                <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', branch.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
+                                                    {{ branch.is_active ? __('active') : __('inactive') }}
+                                                </span>
+                                                <div v-if="page.props.auth.user?.canModify" class="relative">
+                                                    <button @click.stop="openBranchMenuId = openBranchMenuId === branch.id ? null : branch.id" class="p-1 rounded hover:bg-gray-100">
+                                                        <EllipsisHorizontalIcon class="h-4 w-4 text-gray-400" />
+                                                    </button>
+                                                    <div v-if="openBranchMenuId === branch.id" @click="openBranchMenuId = null" class="fixed inset-0 z-30"></div>
+                                                    <div v-if="openBranchMenuId === branch.id" class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
+                                                        <button @click="openEditBranchModal(branch)" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                                            <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
+                                                        </button>
+                                                        <button @click="toggleBranchStatus(branch)" :class="['w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50', branch.is_active ? 'text-orange-600' : 'text-green-600']">
+                                                            <template v-if="branch.is_active"><XMarkIcon class="h-4 w-4" /> {{ __('deactivate') }}</template>
+                                                            <template v-else><CheckIcon class="h-4 w-4" /> {{ __('activate') }}</template>
+                                                        </button>
+                                                        <hr class="my-1" />
+                                                        <button @click="deleteBranch(branch)" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                                                            <TrashIcon class="h-4 w-4" /> {{ __('delete') }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
             </div>
 
             <!-- Empty State -->
