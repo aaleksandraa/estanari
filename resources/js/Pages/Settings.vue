@@ -1,8 +1,9 @@
 <script setup>
-import { useForm, usePage } from '@inertiajs/vue3';
+import { useForm, usePage, router } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import Header from '@/Components/Header.vue';
-import { UserIcon, ShieldCheckIcon, ServerIcon, CurrencyDollarIcon, BuildingOfficeIcon } from '@heroicons/vue/24/outline';
+import { UserIcon, ShieldCheckIcon, ServerIcon, CurrencyDollarIcon, BuildingOfficeIcon, ArrowDownTrayIcon, ArrowUpTrayIcon, DocumentArrowDownIcon } from '@heroicons/vue/24/outline';
 import { useTranslations } from '@/composables/useTranslations';
 
 const { __ } = useTranslations();
@@ -14,6 +15,9 @@ const props = defineProps({
 
 const page = usePage();
 const isAdmin = page.props.auth.user?.role === 'admin';
+
+const importFile = ref(null);
+const importProcessing = ref(false);
 
 const profileForm = useForm({
     name: page.props.auth.user?.name || '',
@@ -88,6 +92,33 @@ const updateLanguage = () => {
         onSuccess: () => {
             // Reload page to apply new language
             window.location.reload();
+        },
+    });
+};
+
+const downloadBackup = () => {
+    window.location.href = route('settings.backup');
+};
+
+const handleFileSelect = (event) => {
+    importFile.value = event.target.files[0];
+};
+
+const submitImport = () => {
+    if (!importFile.value) return;
+    
+    importProcessing.value = true;
+    const formData = new FormData();
+    formData.append('file', importFile.value);
+    
+    router.post(route('settings.import'), formData, {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            importFile.value = null;
+        },
+        onFinish: () => {
+            importProcessing.value = false;
         },
     });
 };
@@ -241,6 +272,81 @@ const updateLanguage = () => {
                         </button>
                     </div>
                 </form>
+            </div>
+
+            <!-- Backup & Import (Admin only) -->
+            <div v-if="isAdmin" class="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center gap-2">
+                        <ServerIcon class="h-5 w-5 text-orange-600" />
+                        <h2 class="text-lg font-semibold text-gray-900">Backup & Import</h2>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-1">Preuzmite backup svih podataka ili importujte podatke sa drugog profila</p>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- Backup Section -->
+                    <div>
+                        <h3 class="font-medium text-sm text-gray-900 mb-2">Preuzmi Backup</h3>
+                        <p class="text-sm text-gray-600 mb-4">Preuzmite JSON fajl sa svim dobavljačima, poslovnicama, plaćanjima i planovima.</p>
+                        <button @click="downloadBackup" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600">
+                            <ArrowDownTrayIcon class="h-4 w-4" /> Preuzmi Backup
+                        </button>
+                    </div>
+
+                    <hr />
+
+                    <!-- Import Section -->
+                    <div>
+                        <h3 class="font-medium text-sm text-gray-900 mb-2">Importuj Podatke</h3>
+                        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                            <h4 class="font-medium text-amber-800 mb-2 flex items-center gap-2">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                Upozorenje
+                            </h4>
+                            <ul class="text-sm text-amber-700 space-y-1 list-disc list-inside">
+                                <li>Import će dodati nove dobavljače, poslovnice, plaćanja i planove</li>
+                                <li>Postojeći podaci neće biti obrisani</li>
+                                <li>Preporučujemo da prvo napravite backup trenutnih podataka</li>
+                                <li>Podržan format: JSON fajl iz backup funkcije</li>
+                            </ul>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Odaberi JSON fajl</label>
+                                <input 
+                                    type="file" 
+                                    @change="handleFileSelect"
+                                    accept=".json"
+                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                />
+                            </div>
+
+                            <div v-if="importFile" class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <DocumentArrowDownIcon class="h-5 w-5 text-gray-400" />
+                                    <span class="text-sm text-gray-700">{{ importFile.name }}</span>
+                                </div>
+                                <button @click="importFile = null" class="text-gray-400 hover:text-red-500">
+                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <button 
+                                @click="submitImport" 
+                                :disabled="!importFile || importProcessing"
+                                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <ArrowUpTrayIcon class="h-4 w-4" />
+                                {{ importProcessing ? 'Importujem...' : 'Importuj Podatke' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- System Info -->

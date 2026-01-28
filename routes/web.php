@@ -79,6 +79,8 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/exchange-rates', [SettingsController::class, 'updateExchangeRates'])->name('settings.exchange-rates');
     Route::put('/settings/company-name', [SettingsController::class, 'updateCompanyName'])->name('settings.company-name');
     Route::put('/settings/language', [SettingsController::class, 'updateLanguage'])->name('settings.language');
+    Route::get('/settings/backup', [SettingsController::class, 'backup'])->name('settings.backup');
+    Route::post('/settings/import', [SettingsController::class, 'import'])->name('settings.import');
 
     // Payment Plans
     Route::get('/plans', [PaymentPlanController::class, 'index'])->name('plans.index');
