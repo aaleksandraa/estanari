@@ -10,6 +10,9 @@ import {
     EllipsisHorizontalIcon, EyeIcon, PencilIcon, TrashIcon, ChevronRightIcon, ArrowDownTrayIcon,
     CheckIcon, XMarkIcon, ArrowUpTrayIcon, DocumentArrowDownIcon
 } from '@heroicons/vue/24/outline';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { __ } = useTranslations();
 
 const props = defineProps({ suppliers: Array, search: String });
 const page = usePage();
@@ -178,26 +181,26 @@ const submitImport = () => {
 
 <template>
     <MainLayout>
-        <Header title="Dobavljači" />
+        <Header :title="__('suppliers')" />
         <div class="p-6 space-y-6">
             <!-- Search & Actions -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div class="relative w-full sm:w-96">
                     <MagnifyingGlassIcon class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <input v-model="searchQuery" @keyup.enter="handleSearch" type="search" placeholder="Pretraži dobavljače..." class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg" />
+                    <input v-model="searchQuery" @keyup.enter="handleSearch" type="search" :placeholder="__('search')" class="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg" />
                 </div>
                 <div class="flex items-center gap-2">
                     <button v-if="page.props.auth.user?.canModify" @click="openImportModal" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100">
-                        <ArrowUpTrayIcon class="h-4 w-4" /> Import
+                        <ArrowUpTrayIcon class="h-4 w-4" /> {{ __('import') }}
                     </button>
                     <button @click="exportExcel" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700">
-                        <ArrowDownTrayIcon class="h-4 w-4" /> Excel
+                        <ArrowDownTrayIcon class="h-4 w-4" /> {{ __('excel') }}
                     </button>
                     <button @click="exportSuppliers" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <ArrowDownTrayIcon class="h-4 w-4" /> CSV
+                        <ArrowDownTrayIcon class="h-4 w-4" /> {{ __('csv') }}
                     </button>
                     <button v-if="page.props.auth.user?.canModify" @click="openNewSupplierModal" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600">
-                        <PlusIcon class="h-4 w-4" /> Novi dobavljač
+                        <PlusIcon class="h-4 w-4" /> {{ __('new_supplier') }}
                     </button>
                 </div>
             </div>
@@ -214,7 +217,7 @@ const submitImport = () => {
                                 <div>
                                     <h3 class="font-semibold text-gray-900">{{ supplier.name }}</h3>
                                     <span :class="['inline-flex items-center px-2 py-0.5 rounded text-xs font-medium mt-1', supplier.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-                                        {{ supplier.is_active ? 'Aktivan' : 'Neaktivan' }}
+                                        {{ supplier.is_active ? __('active') : __('inactive') }}
                                     </span>
                                 </div>
                             </div>
@@ -226,15 +229,15 @@ const submitImport = () => {
                                 <div v-if="openMenuId === supplier.id" @click="openMenuId = null" class="fixed inset-0 z-30"></div>
                                 <div v-if="openMenuId === supplier.id" class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
                                     <button v-if="page.props.auth.user?.canModify" @click="openEditSupplierModal(supplier)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                        <PencilIcon class="h-4 w-4" /> Uredi
+                                        <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
                                     </button>
                                     <button v-if="page.props.auth.user?.canModify" @click="toggleSupplierStatus(supplier)" :class="['w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50', supplier.is_active ? 'text-orange-600' : 'text-green-600']">
-                                        <template v-if="supplier.is_active"><XMarkIcon class="h-4 w-4" /> Deaktiviraj</template>
-                                        <template v-else><CheckIcon class="h-4 w-4" /> Aktiviraj</template>
+                                        <template v-if="supplier.is_active"><XMarkIcon class="h-4 w-4" /> {{ __('deactivate') }}</template>
+                                        <template v-else><CheckIcon class="h-4 w-4" /> {{ __('activate') }}</template>
                                     </button>
                                     <hr v-if="page.props.auth.user?.canModify" class="my-1" />
                                     <button v-if="page.props.auth.user?.canModify" @click="deleteSupplier(supplier)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                                        <TrashIcon class="h-4 w-4" /> Obriši
+                                        <TrashIcon class="h-4 w-4" /> {{ __('delete') }}
                                     </button>
                                 </div>
                             </div>
@@ -249,9 +252,9 @@ const submitImport = () => {
                         <div class="mt-4 flex items-center justify-between">
                             <button @click="toggleExpand(supplier.id)" class="flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline">
                                 <ChevronRightIcon :class="['h-4 w-4 transition-transform', expandedSupplier === supplier.id && 'rotate-90']" />
-                                {{ supplier.branches?.length || 0 }} poslovnica
+                                {{ supplier.branches?.length || 0 }} {{ __('branches').toLowerCase() }}
                             </button>
-                            <button v-if="page.props.auth.user?.canModify" @click="openNewBranchModal(supplier.id)" class="text-sm text-blue-600 hover:underline">+ Dodaj poslovnicu</button>
+                            <button v-if="page.props.auth.user?.canModify" @click="openNewBranchModal(supplier.id)" class="text-sm text-blue-600 hover:underline">+ {{ __('add_branch') }}</button>
                         </div>
                     </div>
 
@@ -265,7 +268,7 @@ const submitImport = () => {
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span :class="['inline-flex items-center px-2 py-0.5 rounded text-xs font-medium', branch.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800']">
-                                        {{ branch.is_active ? 'Aktivna' : 'Neaktivna' }}
+                                        {{ branch.is_active ? __('active') : __('inactive') }}
                                     </span>
                                     <!-- Branch Menu -->
                                     <div v-if="page.props.auth.user?.canModify" class="relative">
@@ -275,15 +278,15 @@ const submitImport = () => {
                                         <div v-if="openBranchMenuId === branch.id" @click="openBranchMenuId = null" class="fixed inset-0 z-30"></div>
                                         <div v-if="openBranchMenuId === branch.id" class="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-40">
                                             <button @click="openEditBranchModal(branch)" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                                                <PencilIcon class="h-4 w-4" /> Uredi
+                                                <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
                                             </button>
                                             <button @click="toggleBranchStatus(branch)" :class="['w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50', branch.is_active ? 'text-orange-600' : 'text-green-600']">
-                                                <template v-if="branch.is_active"><XMarkIcon class="h-4 w-4" /> Deaktiviraj</template>
-                                                <template v-else><CheckIcon class="h-4 w-4" /> Aktiviraj</template>
+                                                <template v-if="branch.is_active"><XMarkIcon class="h-4 w-4" /> {{ __('deactivate') }}</template>
+                                                <template v-else><CheckIcon class="h-4 w-4" /> {{ __('activate') }}</template>
                                             </button>
                                             <hr class="my-1" />
                                             <button @click="deleteBranch(branch)" class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
-                                                <TrashIcon class="h-4 w-4" /> Obriši
+                                                <TrashIcon class="h-4 w-4" /> {{ __('delete') }}
                                             </button>
                                         </div>
                                     </div>
@@ -294,7 +297,7 @@ const submitImport = () => {
 
                     <!-- Footer -->
                     <div class="border-t border-gray-200 bg-gray-50 px-5 py-3">
-                        <p class="text-xs text-gray-500">Dodano: {{ format(parseISO(supplier.created_at), 'dd.MM.yyyy') }}</p>
+                        <p class="text-xs text-gray-500">{{ __('added') }}: {{ format(parseISO(supplier.created_at), 'dd.MM.yyyy') }}</p>
                     </div>
                 </div>
             </div>
@@ -302,75 +305,75 @@ const submitImport = () => {
             <!-- Empty State -->
             <div v-if="suppliers.length === 0" class="flex flex-col items-center justify-center py-12 text-gray-500">
                 <BuildingOffice2Icon class="h-12 w-12 mb-4 opacity-50" />
-                <p class="text-sm">Nema dobavljača za prikaz</p>
+                <p class="text-sm">{{ __('no_suppliers') }}</p>
             </div>
         </div>
 
         <!-- Supplier Modal -->
-        <Modal :show="showSupplierModal" :title="editingSupplier ? 'Uredi dobavljača' : 'Novi dobavljač'" @close="showSupplierModal = false">
+        <Modal :show="showSupplierModal" :title="editingSupplier ? __('edit_supplier') : __('new_supplier')" @close="showSupplierModal = false">
             <form @submit.prevent="submitSupplier" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Naziv *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('supplier_name') }} {{ __('required') }}</label>
                     <input v-model="supplierForm.name" type="text" required class="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                     <p v-if="supplierForm.errors.name" class="mt-1 text-sm text-red-600">{{ supplierForm.errors.name }}</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('email') }}</label>
                     <input v-model="supplierForm.email" type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('phone') }}</label>
                     <input v-model="supplierForm.phone" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresa</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('address') }}</label>
                     <textarea v-model="supplierForm.address" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
                 </div>
                 <div v-if="editingSupplier" class="flex items-center gap-3">
                     <input v-model="supplierForm.is_active" type="checkbox" id="supplier_active" class="h-4 w-4 rounded border-gray-300 text-blue-600" />
-                    <label for="supplier_active" class="text-sm font-medium text-gray-700">Aktivan</label>
+                    <label for="supplier_active" class="text-sm font-medium text-gray-700">{{ __('active') }}</label>
                 </div>
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" @click="showSupplierModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Odustani</button>
+                    <button type="button" @click="showSupplierModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">{{ __('cancel') }}</button>
                     <button type="submit" :disabled="supplierForm.processing" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50">
-                        {{ supplierForm.processing ? 'Spremanje...' : 'Spremi' }}
+                        {{ supplierForm.processing ? __('saving') : __('save') }}
                     </button>
                 </div>
             </form>
         </Modal>
 
         <!-- Branch Modal -->
-        <Modal :show="showBranchModal" :title="editingBranch ? 'Uredi poslovnicu' : 'Nova poslovnica'" @close="showBranchModal = false">
+        <Modal :show="showBranchModal" :title="editingBranch ? __('edit_branch') : __('new_branch')" @close="showBranchModal = false">
             <form @submit.prevent="submitBranch" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Naziv *</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('branch_name') }} {{ __('required') }}</label>
                     <input v-model="branchForm.name" type="text" required class="w-full px-4 py-2 border border-gray-300 rounded-lg" />
                     <p v-if="branchForm.errors.name" class="mt-1 text-sm text-red-600">{{ branchForm.errors.name }}</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Adresa</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('address') }}</label>
                     <textarea v-model="branchForm.address" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg"></textarea>
                 </div>
                 <div v-if="editingBranch" class="flex items-center gap-3">
                     <input v-model="branchForm.is_active" type="checkbox" id="branch_active" class="h-4 w-4 rounded border-gray-300 text-blue-600" />
-                    <label for="branch_active" class="text-sm font-medium text-gray-700">Aktivna</label>
+                    <label for="branch_active" class="text-sm font-medium text-gray-700">{{ __('active') }}</label>
                 </div>
                 <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" @click="showBranchModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">Odustani</button>
+                    <button type="button" @click="showBranchModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">{{ __('cancel') }}</button>
                     <button type="submit" :disabled="branchForm.processing" class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50">
-                        {{ branchForm.processing ? 'Spremanje...' : 'Spremi' }}
+                        {{ branchForm.processing ? __('saving') : __('save') }}
                     </button>
                 </div>
             </form>
         </Modal>
 
         <!-- Import Modal -->
-        <Modal :show="showImportModal" title="Import dobavljača iz Excel-a" @close="showImportModal = false">
+        <Modal :show="showImportModal" :title="__('import_suppliers')" @close="showImportModal = false">
             <div class="space-y-4">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 class="font-medium text-blue-800 mb-2">Upute za import:</h4>
+                    <h4 class="font-medium text-blue-800 mb-2">{{ __('import_instructions') }}</h4>
                     <ol class="text-sm text-blue-700 space-y-1 list-decimal list-inside">
-                        <li>Preuzmite šablon klikom na dugme ispod</li>
+                        <li>{{ __('download_template') }}</li>
                         <li>Popunite podatke o dobavljačima i poslovnicama</li>
                         <li>Obrišite primjere (žuti redovi)</li>
                         <li>Učitajte popunjeni fajl</li>
@@ -379,19 +382,19 @@ const submitImport = () => {
 
                 <div class="flex justify-center">
                     <button @click="downloadTemplate" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-green-700 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100">
-                        <DocumentArrowDownIcon class="h-5 w-5" /> Preuzmi šablon (Excel)
+                        <DocumentArrowDownIcon class="h-5 w-5" /> {{ __('download_template') }}
                     </button>
                 </div>
 
                 <div class="border-t border-gray-200 pt-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Odaberi Excel fajl:</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">{{ __('select_excel_file') }}</label>
                     <input 
                         type="file" 
                         @change="handleFileSelect"
                         accept=".xlsx,.xls"
                         class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
-                    <p class="mt-1 text-xs text-gray-500">Podržani formati: .xlsx, .xls (max 5MB)</p>
+                    <p class="mt-1 text-xs text-gray-500">{{ __('supported_formats') }}</p>
                 </div>
 
                 <div v-if="importFile" class="bg-gray-50 rounded-lg p-3 flex items-center justify-between">
@@ -406,14 +409,14 @@ const submitImport = () => {
 
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" @click="showImportModal = false" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Odustani
+                        {{ __('cancel') }}
                     </button>
                     <button 
                         @click="submitImport" 
                         :disabled="!importFile || importProcessing"
                         class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {{ importProcessing ? 'Importovanje...' : 'Importuj' }}
+                        {{ importProcessing ? __('importing') : __('import') }}
                     </button>
                 </div>
             </div>

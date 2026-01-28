@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 import { usePage, router } from '@inertiajs/vue3';
 import { UserIcon } from '@heroicons/vue/24/outline';
+import { useTranslations } from '@/composables/useTranslations';
 
 defineProps({
     title: String,
@@ -9,6 +10,7 @@ defineProps({
 
 const page = usePage();
 const showUserMenu = ref(false);
+const { __ } = useTranslations();
 </script>
 
 <template>
@@ -39,13 +41,13 @@ const showUserMenu = ref(false);
                         <p class="text-sm font-medium text-gray-900">{{ page.props.auth.user?.name }}</p>
                         <p class="text-xs text-gray-500">{{ page.props.auth.user?.email }}</p>
                     </div>
-                    <a href="/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Postavke</a>
+                    <a href="/settings" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">{{ __('settings') }}</a>
                     <hr class="my-1" />
                     <button
                         @click="router.post(route('logout'))"
                         class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
                     >
-                        Odjavi se
+                        {{ __('logout') }}
                     </button>
                 </div>
             </div>

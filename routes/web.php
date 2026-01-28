@@ -28,6 +28,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export', [DashboardController::class, 'export'])->name('dashboard.export');
     Route::get('/dashboard/export-excel', [DashboardController::class, 'exportExcel'])->name('dashboard.export-excel');
+    
+    // Unpaid (Neplaćeno)
+    Route::get('/unpaid', [DashboardController::class, 'unpaid'])->name('unpaid.index');
+    Route::get('/unpaid/export', [DashboardController::class, 'unpaidExport'])->name('unpaid.export');
+    Route::get('/unpaid/export-excel', [DashboardController::class, 'unpaidExportExcel'])->name('unpaid.export-excel');
 
     // Payments
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
@@ -73,6 +78,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/settings/password', [SettingsController::class, 'updatePassword'])->name('settings.password');
     Route::put('/settings/exchange-rates', [SettingsController::class, 'updateExchangeRates'])->name('settings.exchange-rates');
     Route::put('/settings/company-name', [SettingsController::class, 'updateCompanyName'])->name('settings.company-name');
+    Route::put('/settings/language', [SettingsController::class, 'updateLanguage'])->name('settings.language');
 
     // Payment Plans
     Route::get('/plans', [PaymentPlanController::class, 'index'])->name('plans.index');

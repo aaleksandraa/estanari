@@ -7,14 +7,14 @@ import StatCard from '@/Components/Dashboard/StatCard.vue';
 import PaymentTable from '@/Components/Dashboard/PaymentTable.vue';
 import CurrencySummary from '@/Components/Dashboard/CurrencySummary.vue';
 import Modal from '@/Components/Modal.vue';
-import { CreditCardIcon, ClockIcon, CheckCircleIcon, ExclamationCircleIcon, PlusIcon, ArrowDownTrayIcon, CheckIcon, FunnelIcon, XMarkIcon, BookmarkIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import { ClockIcon, ExclamationCircleIcon, PlusIcon, ArrowDownTrayIcon, CheckIcon, FunnelIcon, XMarkIcon, BookmarkIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
 import DateInput from '@/Components/DateInput.vue';
 import Autocomplete from '@/Components/Autocomplete.vue';
 import { useTranslations } from '@/composables/useTranslations';
 
 const { __, t } = useTranslations();
 
-const props = defineProps({ payments: Array, stats: Object, suppliers: Array, branches: Array, filters: Object, plans: Array });
+const props = defineProps({ payments: Array, stats: Object, suppliers: Array, branches: Array, filters: Object });
 const page = usePage();
 
 const selectedIds = ref([]);
@@ -25,17 +25,14 @@ const editingPayment = ref(null);
 const filteredBranches = ref([]);
 const searchQuery = ref(props.filters?.search || '');
 const paidDate = ref(new Date().toISOString().split('T')[0]);
-// Filters
-const dateFilter = ref(props.filters?.date_filter || 'today');
+
+// Filters (no status filter - always PLANNED)
+const dateFilter = ref(props.filters?.date_filter || 'all');
 const startDate = ref(props.filters?.start_date || '');
 const endDate = ref(props.filters?.end_date || '');
-const statusFilter = ref(props.filters?.status || '');
 const currencyFilter = ref(props.filters?.currency || '');
 const supplierFilter = ref(props.filters?.supplier_id || '');
 const branchFilter = ref(props.filters?.branch_id || '');
-// Sorting
-const sortBy = ref(props.filters?.sort_by || '');
-const sortDirection = ref(props.filters?.sort_direction || 'asc');
 
 // Filtrirane poslovnice za filter dropdown
 const filterBranches = computed(() => {
@@ -49,16 +46,8 @@ const paymentForm = useForm({
 });
 
 const planForm = useForm({
-    name: '',
-    description: '',
-    date_filter: '',
-    date_from: '',
-    date_to: '',
-    filters: {},
-    payment_ids: [],
-    total_km: 0,
-    total_eur: 0,
-    total_usd: 0,
+    name: '', description: '', date_filter: '', date_from: '', date_to: '',
+    filters: {}, payment_ids: [], total_km: 0, total_eur: 0, total_usd: 0,
 });
 
 watch(() => paymentForm.supplier_id, (newVal) => {
@@ -66,26 +55,13 @@ watch(() => paymentForm.supplier_id, (newVal) => {
     if (!editingPayment.value) paymentForm.branch_id = '';
 });
 
-// Computed za odabrana plaćanja
-const selectedPayments = computed(() => {
-    return props.payments.filter(p => selectedIds.value.includes(p.id));
-});
-
-const selectedTotalKM = computed(() => {
-    return selectedPayments.value.filter(p => p.currency === 'KM').reduce((sum, p) => sum + parseFloat(p.amount), 0);
-});
-
-const selectedTotalEUR = computed(() => {
-    return selectedPayments.value.filter(p => p.currency === 'EUR').reduce((sum, p) => sum + parseFloat(p.amount), 0);
-});
-
-const selectedTotalUSD = computed(() => {
-    return selectedPayments.value.filter(p => p.currency === 'USD').reduce((sum, p) => sum + parseFloat(p.amount), 0);
-});
+const selectedPayments = computed(() => props.payments.filter(p => selectedIds.value.includes(p.id)));
+const selectedTotalKM = computed(() => selectedPayments.value.filter(p => p.currency === 'KM').reduce((sum, p) => sum + parseFloat(p.amount), 0));
+const selectedTotalEUR = computed(() => selectedPayments.value.filter(p => p.currency === 'EUR').reduce((sum, p) => sum + parseFloat(p.amount), 0));
+const selectedTotalUSD = computed(() => selectedPayments.value.filter(p => p.currency === 'USD').reduce((sum, p) => sum + parseFloat(p.amount), 0));
 
 const activeFiltersCount = computed(() => {
     let count = 0;
-    if (statusFilter.value) count++;
     if (currencyFilter.value) count++;
     if (supplierFilter.value) count++;
     if (branchFilter.value) count++;
@@ -98,47 +74,28 @@ const applyFilters = () => {
         if (startDate.value) params.start_date = startDate.value;
         if (endDate.value) params.end_date = endDate.value;
     }
-    if (statusFilter.value) params.status = statusFilter.value;
     if (currencyFilter.value) params.currency = currencyFilter.value;
     if (supplierFilter.value) params.supplier_id = supplierFilter.value;
     if (branchFilter.value) params.branch_id = branchFilter.value;
     if (searchQuery.value) params.search = searchQuery.value;
-    if (sortBy.value) {
-        params.sort_by = sortBy.value;
-        params.sort_direction = sortDirection.value;
-    }
-    router.get(route('dashboard'), params, { preserveState: true });
+    router.get(route('unpaid.index'), params, { preserveState: true });
 };
 
 const onSupplierFilterChange = () => {
-    branchFilter.value = ''; // Reset branch filter when supplier changes
+    branchFilter.value = '';
     applyFilters();
 };
 
 const clearFilters = () => {
-    statusFilter.value = '';
     currencyFilter.value = '';
     supplierFilter.value = '';
     branchFilter.value = '';
     searchQuery.value = '';
-    sortBy.value = '';
-    sortDirection.value = 'asc';
-    applyFilters();
-};
-
-const handleSort = (column) => {
-    if (sortBy.value === column) {
-        sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc';
-    } else {
-        sortBy.value = column;
-        sortDirection.value = 'asc';
-    }
     applyFilters();
 };
 
 const handleSelectAll = (checked) => { 
-    const planned = props.payments.filter(p => p.status === 'PLANNED');
-    selectedIds.value = checked ? planned.map(p => p.id) : []; 
+    selectedIds.value = checked ? props.payments.map(p => p.id) : []; 
 };
 const handleSelectOne = (id, checked) => { 
     if (checked) selectedIds.value.push(id); 
@@ -194,11 +151,7 @@ const openSavePlanModal = () => {
     planForm.date_filter = dateFilter.value;
     planForm.date_from = startDate.value || null;
     planForm.date_to = endDate.value || null;
-    planForm.filters = {
-        status: statusFilter.value,
-        currency: currencyFilter.value,
-        supplier_id: supplierFilter.value,
-    };
+    planForm.filters = { currency: currencyFilter.value, supplier_id: supplierFilter.value };
     planForm.payment_ids = selectedIds.value;
     planForm.total_km = selectedTotalKM.value;
     planForm.total_eur = selectedTotalEUR.value;
@@ -207,13 +160,7 @@ const openSavePlanModal = () => {
 };
 
 const submitPlan = () => {
-    planForm.post(route('plans.store'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            showSavePlanModal.value = false;
-            planForm.reset();
-        },
-    });
+    planForm.post(route('plans.store'), { preserveScroll: true, onSuccess: () => { showSavePlanModal.value = false; planForm.reset(); } });
 };
 
 const exportPayments = () => {
@@ -223,11 +170,10 @@ const exportPayments = () => {
         if (startDate.value) params.append('start_date', startDate.value);
         if (endDate.value) params.append('end_date', endDate.value);
     }
-    if (statusFilter.value) params.append('status', statusFilter.value);
     if (currencyFilter.value) params.append('currency', currencyFilter.value);
     if (supplierFilter.value) params.append('supplier_id', supplierFilter.value);
     if (searchQuery.value) params.append('search', searchQuery.value);
-    window.location.href = route('dashboard.export') + '?' + params.toString();
+    window.location.href = route('unpaid.export') + '?' + params.toString();
 };
 
 const exportExcel = () => {
@@ -237,11 +183,10 @@ const exportExcel = () => {
         if (startDate.value) params.append('start_date', startDate.value);
         if (endDate.value) params.append('end_date', endDate.value);
     }
-    if (statusFilter.value) params.append('status', statusFilter.value);
     if (currencyFilter.value) params.append('currency', currencyFilter.value);
     if (supplierFilter.value) params.append('supplier_id', supplierFilter.value);
     if (searchQuery.value) params.append('search', searchQuery.value);
-    window.location.href = route('dashboard.export-excel') + '?' + params.toString();
+    window.location.href = route('unpaid.export-excel') + '?' + params.toString();
 };
 
 const getDateFilterLabel = () => {
@@ -259,23 +204,21 @@ const getDateFilterLabel = () => {
 
 const showOverdueOnly = () => {
     dateFilter.value = 'overdue';
-    statusFilter.value = '';
     currencyFilter.value = '';
     supplierFilter.value = '';
     branchFilter.value = '';
-    router.get(route('dashboard'), { date_filter: 'overdue' }, { preserveState: true });
+    router.get(route('unpaid.index'), { date_filter: 'overdue' }, { preserveState: true });
 };
 </script>
 
 <template>
     <MainLayout>
-        <Header :title="__('payments_overview')" />
+        <Header :title="__('unpaid')" />
         <div class="p-6 space-y-6">
             <!-- Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <StatCard :title="__('today_to_pay')" :value="stats.todayCount.toString()" :subtitle="__('planned_payments')" :icon="ClockIcon" variant="warning" />
-                <StatCard :title="__('unpaid_status')" :value="stats.plannedCount.toString()" :subtitle="__('in_selected_period')" :icon="CreditCardIcon" variant="primary" />
-                <StatCard :title="__('paid_status')" :value="stats.paidCount.toString()" :subtitle="__('in_selected_period')" :icon="CheckCircleIcon" variant="success" />
+                <StatCard :title="__('total_unpaid_period')" :value="stats.plannedCount.toString()" :subtitle="__('in_selected_period')" :icon="ClockIcon" variant="primary" />
                 <StatCard 
                     :title="__('not_paid_on_time')" 
                     :value="stats.overdueCount.toString()" 
@@ -330,11 +273,6 @@ const showOverdueOnly = () => {
                         <MagnifyingGlassIcon class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     </div>
 
-                    <select v-model="statusFilter" @change="applyFilters" class="h-9 pl-3 pr-8 text-sm border border-gray-300 rounded-lg bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3d%22http%3a%2f%2fwww.w3.org%2f2000%2fsvg%22%20viewBox%3d%220%200%2020%2020%22%20fill%3d%22%236b7280%22%3e%3cpath%20fill-rule%3d%22evenodd%22%20d%3d%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3d%22evenodd%22%2f%3e%3c%2fsvg%3e')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
-                        <option value="">{{ __('all_statuses') }}</option>
-                        <option value="PLANNED">{{ __('unpaid_status') }}</option>
-                        <option value="PAID">{{ __('paid_status') }}</option>
-                    </select>
                     <select v-model="currencyFilter" @change="applyFilters" class="h-9 pl-3 pr-8 text-sm border border-gray-300 rounded-lg bg-white appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3csvg%20xmlns%3d%22http%3a%2f%2fwww.w3.org%2f2000%2fsvg%22%20viewBox%3d%220%200%2020%2020%22%20fill%3d%22%236b7280%22%3e%3cpath%20fill-rule%3d%22evenodd%22%20d%3d%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3d%22evenodd%22%2f%3e%3c%2fsvg%3e')] bg-[length:1.25rem_1.25rem] bg-[right_0.5rem_center] bg-no-repeat">
                         <option value="">{{ __('all_currencies') }}</option>
                         <option value="KM">KM</option>
@@ -364,7 +302,7 @@ const showOverdueOnly = () => {
 
             <!-- Actions -->
             <div class="flex flex-wrap items-center justify-between gap-4">
-                <CurrencySummary :totalKM="stats.totalKM" :totalEUR="stats.totalEUR" :totalUSD="stats.totalUSD" :label="__('total')" />
+                <CurrencySummary :totalKM="stats.totalKM" :totalEUR="stats.totalEUR" :totalUSD="stats.totalUSD" :label="__('total_unpaid')" />
                 <div class="flex items-center gap-2">
                     <button v-if="selectedIds.length > 0 && page.props.auth.user?.canModify" @click="handleBatchMarkAsPaid" class="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600">
                         <CheckIcon class="h-4 w-4" /> {{ __('mark_paid') }} ({{ selectedIds.length }})
@@ -386,22 +324,11 @@ const showOverdueOnly = () => {
 
             <!-- Results info -->
             <div class="text-sm text-gray-500">
-                {{ __('showing') }} {{ payments.length }} {{ __('payments') }} {{ __('for_period') }} <span class="font-medium">{{ getDateFilterLabel() }}</span>
+                {{ __('showing') }} {{ payments.length }} {{ __('unpaid_payments') }} {{ __('for_period') }} <span class="font-medium">{{ getDateFilterLabel() }}</span>
             </div>
 
             <!-- Table -->
-            <PaymentTable 
-                :payments="payments" 
-                :selectedIds="selectedIds" 
-                :sortBy="sortBy"
-                :sortDirection="sortDirection"
-                :plans="plans"
-                @selectAll="handleSelectAll" 
-                @selectOne="handleSelectOne" 
-                @markAsPaid="handleMarkAsPaid" 
-                @edit="openEditPaymentModal"
-                @sort="handleSort"
-            />
+            <PaymentTable :payments="payments" :selectedIds="selectedIds" @selectAll="handleSelectAll" @selectOne="handleSelectOne" @markAsPaid="handleMarkAsPaid" @edit="openEditPaymentModal" />
         </div>
 
         <!-- Payment Modal -->
@@ -409,22 +336,11 @@ const showOverdueOnly = () => {
             <form @submit.prevent="submitPayment" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('supplier') }} {{ __('required') }}</label>
-                    <Autocomplete
-                        v-model="paymentForm.supplier_id"
-                        :options="suppliers"
-                        :placeholder="__('search_supplier')"
-                        :required="true"
-                    />
+                    <Autocomplete v-model="paymentForm.supplier_id" :options="suppliers" :placeholder="__('search_supplier')" :required="true" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('branch') }} {{ __('required') }}</label>
-                    <Autocomplete
-                        v-model="paymentForm.branch_id"
-                        :options="filteredBranches"
-                        :placeholder="__('search_branch')"
-                        :disabled="!paymentForm.supplier_id"
-                        :required="true"
-                    />
+                    <Autocomplete v-model="paymentForm.branch_id" :options="filteredBranches" :placeholder="__('search_branch')" :disabled="!paymentForm.supplier_id" :required="true" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">{{ __('invoice_number') }}</label>

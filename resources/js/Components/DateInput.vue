@@ -194,7 +194,7 @@ onUnmounted(() => {
                 <div class="flex items-center justify-between mb-3">
                     <button
                         type="button"
-                        @click="prevMonth"
+                        @click.stop="prevMonth"
                         class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                         <ChevronLeftIcon class="h-5 w-5 text-gray-600" />
@@ -202,7 +202,7 @@ onUnmounted(() => {
                     <span class="font-semibold text-gray-800">{{ currentMonthYear }}</span>
                     <button
                         type="button"
-                        @click="nextMonth"
+                        @click.stop="nextMonth"
                         class="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                         <ChevronRightIcon class="h-5 w-5 text-gray-600" />
@@ -226,7 +226,7 @@ onUnmounted(() => {
                         v-for="(dayObj, index) in calendarDays"
                         :key="index"
                         type="button"
-                        @click="selectDay(dayObj)"
+                        @click.stop="selectDay(dayObj)"
                         :class="[
                             'h-8 w-8 text-sm rounded-lg transition-colors flex items-center justify-center',
                             dayObj.isCurrentMonth ? 'text-gray-800' : 'text-gray-400',
@@ -242,7 +242,7 @@ onUnmounted(() => {
                 <div class="mt-3 pt-3 border-t border-gray-100">
                     <button
                         type="button"
-                        @click="selectDay({ day: new Date().getDate(), month: new Date().getMonth(), year: new Date().getFullYear(), isCurrentMonth: true })"
+                        @click.stop="selectDay({ day: new Date().getDate(), month: new Date().getMonth(), year: new Date().getFullYear(), isCurrentMonth: true })"
                         class="w-full py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
                     >
                         Danas

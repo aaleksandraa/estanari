@@ -22,11 +22,19 @@ class PaymentController extends Controller
             ->where('status', 'PAID')
             ->orderBy('paid_date', 'desc');
 
+        // Date filter
+        if ($request->filled('paid_date')) {
+            $query->whereDate('paid_date', $request->paid_date);
+        }
+
         if ($request->filled('currency')) {
             $query->where('currency', $request->currency);
         }
         if ($request->filled('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
+        }
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
         }
         if ($request->filled('search')) {
             $search = $request->search;
@@ -40,6 +48,7 @@ class PaymentController extends Controller
 
         $payments = $query->get();
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']);
+        $branches = Branch::where('is_active', true)->orderBy('name')->get(['id', 'name', 'supplier_id']);
 
         $summary = [
             'totalKM' => $payments->where('currency', 'KM')->sum('amount'),
@@ -51,8 +60,9 @@ class PaymentController extends Controller
         return Inertia::render('Payments', [
             'payments' => $payments,
             'suppliers' => $suppliers,
+            'branches' => $branches,
             'summary' => $summary,
-            'filters' => $request->only(['currency', 'supplier_id', 'search']),
+            'filters' => $request->only(['currency', 'supplier_id', 'branch_id', 'search', 'paid_date']),
         ]);
     }
 
@@ -102,10 +112,14 @@ class PaymentController extends Controller
         return back()->with('success', 'Plaćanje uspješno ažurirano.');
     }
 
-    public function markAsPaid(Payment $payment): RedirectResponse
+    public function markAsPaid(Request $request, Payment $payment): RedirectResponse
     {
+        $validated = $request->validate([
+            'paid_date' => 'nullable|date',
+        ]);
+
         $oldData = $payment->toArray();
-        $payment->markAsPaid(auth()->id());
+        $payment->markAsPaid(auth()->id(), $validated['paid_date'] ?? null);
         AuditLog::log('payments', $payment->id, 'UPDATE', $oldData, $payment->fresh()->toArray());
 
         return back()->with('success', 'Plaćanje označeno kao plaćeno.');
@@ -116,13 +130,14 @@ class PaymentController extends Controller
         $validated = $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'exists:payments,id',
+            'paid_date' => 'nullable|date',
         ]);
 
         $payments = Payment::whereIn('id', $validated['ids'])->planned()->get();
         
         foreach ($payments as $payment) {
             $oldData = $payment->toArray();
-            $payment->markAsPaid(auth()->id());
+            $payment->markAsPaid(auth()->id(), $validated['paid_date'] ?? null);
             AuditLog::log('payments', $payment->id, 'UPDATE', $oldData, $payment->fresh()->toArray());
         }
 
@@ -159,11 +174,17 @@ class PaymentController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('paid_date')) {
+            $query->whereDate('paid_date', $request->paid_date);
+        }
         if ($request->filled('currency')) {
             $query->where('currency', $request->currency);
         }
         if ($request->filled('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
+        }
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
         }
 
         $payments = $query->get();
@@ -198,11 +219,17 @@ class PaymentController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('paid_date')) {
+            $query->whereDate('paid_date', $request->paid_date);
+        }
         if ($request->filled('currency')) {
             $query->where('currency', $request->currency);
         }
         if ($request->filled('supplier_id')) {
             $query->where('supplier_id', $request->supplier_id);
+        }
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', $request->branch_id);
         }
 
         $payments = $query->get();

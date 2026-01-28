@@ -1,5 +1,6 @@
 <script setup>
 import { Link, usePage, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import {
     HomeIcon,
     CreditCardIcon,
@@ -11,7 +12,9 @@ import {
     WalletIcon,
     ArrowRightOnRectangleIcon,
     ClipboardDocumentListIcon,
+    ClockIcon,
 } from '@heroicons/vue/24/outline';
+import { getNavTranslation } from '@/utils/translations';
 
 defineProps({
     collapsed: Boolean,
@@ -20,21 +23,35 @@ defineProps({
 defineEmits(['toggle']);
 
 const page = usePage();
+const userLang = computed(() => page.props.auth?.user?.language || 'bs');
 
-const navigation = [
-    { name: 'Pregled', href: '/', icon: HomeIcon, routeName: 'dashboard' },
-    { name: 'Plaćeno', href: '/payments', icon: CreditCardIcon, routeName: 'payments.index' },
-    { name: 'Planovi', href: '/plans', icon: ClipboardDocumentListIcon, routeName: 'plans.index' },
-    { name: 'Dobavljači', href: '/suppliers', icon: BuildingOffice2Icon, routeName: 'suppliers.index' },
-    { name: 'Izvještaji', href: '/reports', icon: DocumentTextIcon, routeName: 'reports.index' },
-    { name: 'Podešavanja', href: '/settings', icon: Cog6ToothIcon, routeName: 'settings.index' },
-];
+const navigation = computed(() => [
+    { name: getNavTranslation('dashboard', userLang.value), href: '/', icon: HomeIcon, routeName: 'dashboard' },
+    { name: getNavTranslation('unpaid', userLang.value), href: '/unpaid', icon: ClockIcon, routeName: 'unpaid.index' },
+    { name: getNavTranslation('paid', userLang.value), href: '/payments', icon: CreditCardIcon, routeName: 'payments.index' },
+    { name: getNavTranslation('plans', userLang.value), href: '/plans', icon: ClipboardDocumentListIcon, routeName: 'plans.index' },
+    { name: getNavTranslation('suppliers', userLang.value), href: '/suppliers', icon: BuildingOffice2Icon, routeName: 'suppliers.index' },
+    { name: getNavTranslation('reports', userLang.value), href: '/reports', icon: DocumentTextIcon, routeName: 'reports.index' },
+    { name: getNavTranslation('settings', userLang.value), href: '/settings', icon: Cog6ToothIcon, routeName: 'settings.index' },
+]);
 
 const roleLabels = {
-    admin: 'Administrator',
-    accountant: 'Računovodstvo',
-    viewer: 'Pregled',
+    bs: { admin: 'Administrator', accountant: 'Računovodstvo', viewer: 'Pregled' },
+    de: { admin: 'Administrator', accountant: 'Buchhaltung', viewer: 'Ansicht' },
+    en: { admin: 'Administrator', accountant: 'Accounting', viewer: 'Viewer' },
+    it: { admin: 'Amministratore', accountant: 'Contabilità', viewer: 'Visualizzatore' },
+    sl: { admin: 'Administrator', accountant: 'Računovodstvo', viewer: 'Pregled' },
+    es: { admin: 'Administrador', accountant: 'Contabilidad', viewer: 'Visor' },
+    bg: { admin: 'Администратор', accountant: 'Счетоводство', viewer: 'Преглед' },
+    hu: { admin: 'Adminisztrátor', accountant: 'Könyvelés', viewer: 'Néző' },
+    fr: { admin: 'Administrateur', accountant: 'Comptabilité', viewer: 'Visualiseur' },
+    el: { admin: 'Διαχειριστής', accountant: 'Λογιστική', viewer: 'Θεατής' },
 };
+
+const getRoleLabel = computed(() => {
+    const role = page.props.auth?.user?.role;
+    return roleLabels[userLang.value]?.[role] || roleLabels.bs[role] || role;
+});
 
 const logout = () => {
     router.post(route('logout'));
@@ -73,7 +90,7 @@ const isActive = (routeName) => {
         <div v-if="!collapsed && page.props.auth.user" class="px-4 py-3 border-b border-slate-700">
             <p class="text-sm font-medium truncate">{{ page.props.auth.user.email }}</p>
             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-700 text-slate-300 mt-1">
-                {{ roleLabels[page.props.auth.user.role] || page.props.auth.user.role }}
+                {{ getRoleLabel }}
             </span>
         </div>
 
@@ -105,7 +122,7 @@ const isActive = (routeName) => {
                 ]"
             >
                 <ArrowRightOnRectangleIcon class="h-5 w-5" />
-                <span v-if="!collapsed">Odjavi se</span>
+                <span v-if="!collapsed">{{ getNavTranslation('logout', userLang) }}</span>
             </button>
         </div>
 

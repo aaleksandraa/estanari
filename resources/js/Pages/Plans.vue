@@ -10,6 +10,9 @@ import {
     DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon
 } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/vue/24/solid';
+import { useTranslations } from '@/composables/useTranslations';
+
+const { __ } = useTranslations();
 
 const props = defineProps({ plans: Array });
 const page = usePage();
@@ -63,10 +66,10 @@ const openDeleteConfirm = (plan) => {
     confirmPlan.value = plan;
     confirmAction.value = 'delete';
     confirmConfig.value = {
-        title: 'Obriši plan',
-        message: `Jeste li sigurni da želite obrisati plan "${plan.name}"? Ova akcija se ne može poništiti.`,
+        title: __('delete') + ' ' + __('save_plan').toLowerCase(),
+        message: __('delete_plan_confirm').replace('{name}', plan.name),
         variant: 'danger',
-        confirmText: 'Obriši',
+        confirmText: __('delete'),
     };
     showConfirmModal.value = true;
     openMenuId.value = null;
@@ -76,10 +79,10 @@ const openMarkAsPaidConfirm = (plan) => {
     confirmPlan.value = plan;
     confirmAction.value = 'markAsPaid';
     confirmConfig.value = {
-        title: 'Označi kao plaćeno',
-        message: `Označiti plan "${plan.name}" kao plaćen? Sva planirana plaćanja (${plan.payment_count}) u ovom planu će biti označena kao plaćena.`,
+        title: __('mark_as_paid'),
+        message: __('mark_plan_as_paid_confirm').replace('{name}', plan.name).replace('{count}', plan.payment_count),
         variant: 'success',
-        confirmText: 'Označi kao plaćeno',
+        confirmText: __('mark_as_paid'),
     };
     showConfirmModal.value = true;
     openMenuId.value = null;
@@ -130,22 +133,29 @@ const exportExcel = (plan) => {
 };
 
 const getDateFilterLabel = (filter) => {
-    const labels = { today: 'Danas', tomorrow: 'Sutra', '3days': '3 dana', '7days': '7 dana', period: 'Period', all: 'Svi', custom: 'Prilagođeno' };
+    const labels = {
+        today: __('today'),
+        tomorrow: __('tomorrow'),
+        '3days': __('3days'),
+        '7days': __('7days'),
+        period: __('period'),
+        all: __('all'),
+        custom: __('custom')
+    };
     return labels[filter] || filter;
 };
 </script>
 
 <template>
     <MainLayout>
-        <Header title="Spremljeni planovi" />
+        <Header :title="__('saved_plans')" />
         <div class="p-6 space-y-6">
             <!-- Empty State -->
             <div v-if="plans.length === 0" class="flex flex-col items-center justify-center py-16 text-gray-500">
                 <ClipboardDocumentListIcon class="h-16 w-16 mb-4 opacity-40" />
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Nema spremljenih planova</h3>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('no_saved_plans') }}</h3>
                 <p class="text-sm text-center max-w-md">
-                    Kreirajte plan na stranici Pregled odabirom filtera i klikom na "Spremi plan".
-                    Planovi vam omogućavaju brz pristup često korištenim pregledima plaćanja.
+                    {{ __('no_saved_plans_desc') }}
                 </p>
             </div>
 
@@ -159,7 +169,7 @@ const getDateFilterLabel = (filter) => {
                     <!-- Paid Badge -->
                     <div v-if="plan.is_paid" class="absolute top-3 right-12 z-10">
                         <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                            <CheckCircleSolidIcon class="h-3.5 w-3.5" /> Plaćeno
+                            <CheckCircleSolidIcon class="h-3.5 w-3.5" /> {{ __('paid_status') }}
                         </span>
                     </div>
 
@@ -199,7 +209,7 @@ const getDateFilterLabel = (filter) => {
                             </div>
                             <div class="text-center">
                                 <p class="text-lg font-bold text-gray-700">{{ plan.payment_count }}</p>
-                                <p class="text-xs text-gray-500">plaćanja</p>
+                                <p class="text-xs text-gray-500">{{ __('payments') }}</p>
                             </div>
                         </div>
                     </div>
@@ -212,7 +222,7 @@ const getDateFilterLabel = (filter) => {
                                 <span>{{ getDateFilterLabel(plan.date_filter) }}</span>
                             </div>
                             <span v-if="plan.is_paid && plan.paid_at" class="text-green-600">
-                                Plaćeno: {{ formatDateTime(plan.paid_at) }}
+                                {{ __('paid_at') }} {{ formatDateTime(plan.paid_at) }}
                             </span>
                             <span v-else>{{ formatDateTime(plan.created_at) }}</span>
                         </div>
@@ -230,26 +240,26 @@ const getDateFilterLabel = (filter) => {
                         class="fixed w-52 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-40"
                         :style="getMenuPosition(plan.id)">
                         <button @click="viewPlan(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            <EyeIcon class="h-4 w-4" /> Pregledaj
+                            <EyeIcon class="h-4 w-4" /> {{ __('view_payment') }}
                         </button>
                         <button v-if="!plan.is_paid && page.props.auth.user?.canModify" @click="openMarkAsPaidConfirm(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
-                            <CheckCircleIcon class="h-4 w-4" /> Označi kao plaćeno
+                            <CheckCircleIcon class="h-4 w-4" /> {{ __('mark_as_paid') }}
                         </button>
                         <hr class="my-1" />
                         <button @click="exportCsv(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            <ArrowDownTrayIcon class="h-4 w-4" /> Export CSV
+                            <ArrowDownTrayIcon class="h-4 w-4" /> {{ __('export_csv') }}
                         </button>
                         <button @click="exportPdf(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            <DocumentArrowDownIcon class="h-4 w-4" /> Export PDF
+                            <DocumentArrowDownIcon class="h-4 w-4" /> {{ __('export_pdf') }}
                         </button>
                         <button @click="exportExcel(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            <DocumentArrowDownIcon class="h-4 w-4" /> Export Excel
+                            <DocumentArrowDownIcon class="h-4 w-4" /> {{ __('export_excel') }}
                         </button>
                         <hr class="my-1" />
                         <button v-if="page.props.auth.user?.canModify" @click="openDeleteConfirm(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                            <TrashIcon class="h-4 w-4" /> Obriši
+                            <TrashIcon class="h-4 w-4" /> {{ __('delete') }}
                         </button>
                     </div>
                 </div>

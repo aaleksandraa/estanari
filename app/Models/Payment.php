@@ -61,11 +61,11 @@ class Payment extends Model
         return $this->belongsTo(User::class, 'paid_by');
     }
 
-    public function markAsPaid(int $userId): void
+    public function markAsPaid(int $userId, ?string $paidDate = null): void
     {
         $this->update([
             'status' => self::STATUS_PAID,
-            'paid_date' => now()->toDateString(),
+            'paid_date' => $paidDate ?? now()->toDateString(),
             'paid_by' => $userId,
         ]);
     }

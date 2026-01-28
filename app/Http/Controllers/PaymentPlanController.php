@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\TranslationHelper;
 use App\Models\Payment;
 use App\Models\PaymentPlan;
 use App\Models\Setting;
@@ -93,15 +94,19 @@ class PaymentPlanController extends Controller
         return back()->with('success', 'Plan uspješno obrisan.');
     }
 
-    public function markAsPaid(PaymentPlan $plan): RedirectResponse
+    public function markAsPaid(Request $request, PaymentPlan $plan): RedirectResponse
     {
+        $validated = $request->validate([
+            'paid_date' => 'nullable|date',
+        ]);
+
         $payments = Payment::whereIn('id', $plan->payment_ids ?? [])
             ->where('status', 'PLANNED')
             ->get();
 
         $paidCount = 0;
         foreach ($payments as $payment) {
-            $payment->markAsPaid(auth()->id());
+            $payment->markAsPaid(auth()->id(), $validated['paid_date'] ?? null);
             $paidCount++;
         }
 
@@ -283,6 +288,7 @@ class PaymentPlanController extends Controller
 
     public function exportExcel(PaymentPlan $plan): StreamedResponse
     {
+        $locale = TranslationHelper::getUserLocale();
         $exchangeRates = Setting::getExchangeRates();
         
         $payments = Payment::with(['supplier:id,name', 'branch:id,name'])
@@ -295,33 +301,41 @@ class PaymentPlanController extends Controller
             ->sortByDesc('amount_in_km')
             ->values();
 
-        // Always show "Ukupno KM" column for consistency
-        $hasEurOrUsd = true; // Always true to show the column
+        $hasEurOrUsd = true;
         
         $excel = new ExcelExportService();
         
-        // Calculate grand total in KM
         $grandTotalKM = $payments->sum('amount_in_km');
         
-        $colCount = 9; // 9 columns with description
+        $colCount = 9;
         
         $excel->setTitle(
-            "Plan plaćanja: {$plan->name}",
-            "Kreiran: " . $plan->created_at->format('d.m.Y H:i') . ($plan->description ? " | {$plan->description}" : ''),
+            TranslationHelper::trans('payment_plan', $locale) . ": {$plan->name}",
+            TranslationHelper::trans('created_at', $locale) . ": " . $plan->created_at->format('d.m.Y H:i') . ($plan->description ? " | {$plan->description}" : ''),
             $colCount
         );
 
         $summaryData = [
-            'Ukupno KM' => number_format($plan->total_km, 2, ',', '.') . ' KM',
-            'Ukupno EUR' => number_format($plan->total_eur, 2, ',', '.') . ' EUR',
-            'Ukupno USD' => number_format($plan->total_usd ?? 0, 2, ',', '.') . ' USD',
-            'Broj stavki' => $plan->payment_count,
-            'UKUPNO (KM)' => number_format($grandTotalKM, 2, ',', '.') . ' KM',
+            TranslationHelper::trans('total_km', $locale) => number_format($plan->total_km, 2, ',', '.') . ' KM',
+            TranslationHelper::trans('total_eur', $locale) => number_format($plan->total_eur, 2, ',', '.') . ' EUR',
+            TranslationHelper::trans('total_usd', $locale) => number_format($plan->total_usd ?? 0, 2, ',', '.') . ' USD',
+            TranslationHelper::trans('payment_count', $locale) => $plan->payment_count,
+            strtoupper(TranslationHelper::trans('total_km', $locale)) => number_format($grandTotalKM, 2, ',', '.') . ' KM',
         ];
 
         $excel->setSummaryRow($summaryData, 3, $colCount);
 
-        $headers = ['Br. fakture', 'Opis', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Datum', 'Ukupno KM'];
+        $headers = [
+            TranslationHelper::trans('invoice_number', $locale),
+            TranslationHelper::trans('description', $locale),
+            TranslationHelper::trans('supplier', $locale),
+            TranslationHelper::trans('branch', $locale),
+            TranslationHelper::trans('amount', $locale),
+            TranslationHelper::trans('currency', $locale),
+            TranslationHelper::trans('status', $locale),
+            TranslationHelper::trans('date', $locale),
+            TranslationHelper::trans('total_km', $locale)
+        ];
         $excel->setHeaders($headers, 5);
 
         $data = [];
@@ -333,7 +347,7 @@ class PaymentPlanController extends Controller
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,
-                'status' => $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaćeno',
+                'status' => $payment->status === 'PAID' ? TranslationHelper::trans('paid', $locale) : TranslationHelper::trans('unpaid', $locale),
                 'date' => $payment->planned_date->format('d.m.Y'),
                 'amount_km' => $payment->amount_in_km,
             ];
@@ -345,18 +359,27 @@ class PaymentPlanController extends Controller
 
         $excel->setData($data, 6, $columnTypes);
         
-        // Add totals row at the bottom
         $totalsRow = 6 + count($data);
-        $totalsData = ['', '', '', 'UKUPNO:', '', '', '', '', $grandTotalKM];
+        $totalsData = ['', '', '', strtoupper(TranslationHelper::trans('total_km', $locale)) . ':', '', '', '', '', $grandTotalKM];
         $excel->setTotalsRow($totalsData, $totalsRow, $colCount);
         
-        // Format the total amount cell
         $excel->getSheet()->getStyle('I' . $totalsRow)->getNumberFormat()->setFormatCode('#,##0.00');
         
         $excel->autoSizeColumns($colCount);
 
-        $filename = 'plan_' . \Str::slug($plan->name) . '_' . date('d-m-Y') . '.xlsx';
+        $filename = $this->getTranslatedFilename('plan', $locale) . '_' . \Str::slug($plan->name) . '_' . date('d-m-Y') . '.xlsx';
         return $excel->download($filename);
+    }
+
+    private function getTranslatedFilename(string $key, string $locale): string
+    {
+        $filenames = [
+            'bs' => ['plan' => 'plan'],
+            'de' => ['plan' => 'plan'],
+            'en' => ['plan' => 'plan'],
+        ];
+        
+        return $filenames[$locale][$key] ?? $filenames['en'][$key] ?? $key;
     }
 
     private function generatePdfHtml(PaymentPlan $plan, $payments, array $exchangeRates): string

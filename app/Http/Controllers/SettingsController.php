@@ -82,4 +82,21 @@ class SettingsController extends Controller
 
         return back()->with('success', 'Naziv firme uspješno ažuriran.');
     }
+
+    public function updateLanguage(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'language' => 'required|string|in:bs,de,en,it,sl,es,bg,hu,fr,el',
+        ]);
+
+        auth()->user()->update([
+            'language' => $validated['language'],
+        ]);
+
+        // Set app locale
+        app()->setLocale($validated['language']);
+        session()->put('locale', $validated['language']);
+
+        return back()->with('success', __('Language successfully updated.'));
+    }
 }

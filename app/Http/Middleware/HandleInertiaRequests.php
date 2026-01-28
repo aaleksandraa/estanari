@@ -27,6 +27,7 @@ class HandleInertiaRequests extends Middleware
                     'role' => $request->user()->getRole(),
                     'canModify' => $request->user()->canModify(),
                     'isAdmin' => $request->user()->isAdmin(),
+                    'language' => $request->user()->language ?? 'bs',
                 ] : null,
             ],
             'flash' => [
