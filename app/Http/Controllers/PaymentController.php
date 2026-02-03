@@ -118,8 +118,23 @@ class PaymentController extends Controller
             'currency' => 'required|in:KM,EUR,USD',
             'planned_date' => 'required|date',
             'description' => 'nullable|string|max:1000',
+            'save_description' => 'sometimes|boolean',
         ]);
 
+        // Save description if checkbox is checked
+        if ($request->boolean('save_description') && !empty($validated['description'])) {
+            \App\Models\SavedDescription::updateOrCreate(
+                [
+                    'supplier_id' => $validated['supplier_id'],
+                    'branch_id' => $validated['branch_id'],
+                ],
+                [
+                    'description' => $validated['description'],
+                ]
+            );
+        }
+
+        unset($validated['save_description']);
         $oldData = $payment->toArray();
         $payment->update($validated);
         AuditLog::log('payments', $payment->id, 'UPDATE', $oldData, $payment->fresh()->toArray());
