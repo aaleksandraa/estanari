@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/payments/batch-mark-paid', [PaymentController::class, 'batchMarkAsPaid'])->name('payments.batch-mark-paid');
     Route::get('/payments/export', [PaymentController::class, 'export'])->name('payments.export');
     Route::get('/payments/export-excel', [PaymentController::class, 'exportExcel'])->name('payments.export-excel');
+    Route::get('/payments/saved-description/{supplier}/{branch}', [PaymentController::class, 'getSavedDescription'])->name('payments.saved-description');
 
     // Suppliers
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');

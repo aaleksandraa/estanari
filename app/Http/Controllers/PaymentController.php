@@ -77,6 +77,7 @@ class PaymentController extends Controller
             'planned_date' => 'required|date',
             'description' => 'nullable|string|max:1000',
             'status' => 'sometimes|in:PLANNED,PAID',
+            'save_description' => 'sometimes|boolean',
         ]);
 
         $validated['created_by'] = auth()->id();
@@ -87,6 +88,20 @@ class PaymentController extends Controller
             $validated['paid_by'] = auth()->id();
         }
 
+        // Save description if checkbox is checked
+        if ($request->boolean('save_description') && !empty($validated['description'])) {
+            \App\Models\SavedDescription::updateOrCreate(
+                [
+                    'supplier_id' => $validated['supplier_id'],
+                    'branch_id' => $validated['branch_id'],
+                ],
+                [
+                    'description' => $validated['description'],
+                ]
+            );
+        }
+
+        unset($validated['save_description']);
         $payment = Payment::create($validated);
         AuditLog::log('payments', $payment->id, 'INSERT', null, $payment->toArray());
 
@@ -274,5 +289,16 @@ class PaymentController extends Controller
 
         $filename = 'placanja_' . date('d-m-Y') . '.xlsx';
         return $excel->download($filename);
+    }
+
+    public function getSavedDescription($supplierId, $branchId)
+    {
+        $savedDescription = \App\Models\SavedDescription::where('supplier_id', $supplierId)
+            ->where('branch_id', $branchId)
+            ->first();
+
+        return response()->json([
+            'description' => $savedDescription?->description ?? '',
+        ]);
     }
 }
