@@ -39,7 +39,8 @@ class Payment extends Model
 
     public const CURRENCY_KM = 'KM';
     public const CURRENCY_EUR = 'EUR';
-    public const CURRENCIES = [self::CURRENCY_KM, self::CURRENCY_EUR];
+    public const CURRENCY_USD = 'USD';
+    public const CURRENCIES = [self::CURRENCY_KM, self::CURRENCY_EUR, self::CURRENCY_USD];
 
     public function supplier(): BelongsTo
     {
