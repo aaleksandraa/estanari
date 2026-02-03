@@ -28,7 +28,13 @@ class DashboardController extends Controller
 
         switch ($dateFilter) {
             case 'today':
-                $query->whereDate('planned_date', $today);
+                $query->where(function ($q) use ($today) {
+                    $q->whereDate('planned_date', $today)
+                      ->orWhere(function ($sq) use ($today) {
+                          $sq->where('status', 'PAID')
+                             ->whereDate('paid_date', $today);
+                      });
+                });
                 break;
             case 'tomorrow':
                 $query->whereDate('planned_date', $today->copy()->addDay());

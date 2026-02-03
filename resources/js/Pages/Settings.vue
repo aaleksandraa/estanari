@@ -14,7 +14,7 @@ const props = defineProps({
 });
 
 const page = usePage();
-const isAdmin = page.props.auth.user?.role === 'admin';
+const isAdmin = page.props.auth.user?.isAdmin;
 
 const importFile = ref(null);
 const importProcessing = ref(false);

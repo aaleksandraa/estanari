@@ -54,7 +54,7 @@ class SettingsController extends Controller
     public function updateExchangeRates(Request $request): RedirectResponse
     {
         // Only admin can update exchange rates
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->isAdmin()) {
             abort(403, 'Nemate dozvolu za ovu akciju.');
         }
 
@@ -72,7 +72,7 @@ class SettingsController extends Controller
     public function updateCompanyName(Request $request): RedirectResponse
     {
         // Only admin can update company name
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->isAdmin()) {
             abort(403, 'Nemate dozvolu za ovu akciju.');
         }
 
@@ -105,7 +105,7 @@ class SettingsController extends Controller
     public function backup()
     {
         // Only admin can backup
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->isAdmin()) {
             abort(403, 'Nemate dozvolu za ovu akciju.');
         }
 
@@ -128,7 +128,7 @@ class SettingsController extends Controller
     public function import(Request $request): RedirectResponse
     {
         // Only admin can import
-        if (auth()->user()->role !== 'admin') {
+        if (!auth()->user()->isAdmin()) {
             abort(403, 'Nemate dozvolu za ovu akciju.');
         }
 
