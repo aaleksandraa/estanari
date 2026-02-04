@@ -9,7 +9,7 @@ import DateInput from '@/Components/DateInput.vue';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import {
     CalendarIcon, EllipsisHorizontalIcon, EyeIcon, TrashIcon, ArrowDownTrayIcon,
-    DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon, PencilIcon,
+    DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon,
     MagnifyingGlassIcon, FunnelIcon, XMarkIcon, PlusIcon
 } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/vue/24/solid';
@@ -61,30 +61,30 @@ const filteredPlans = computed(() => {
     // Filter by single date
     if (selectedDate.value && !showPeriodPicker.value) {
         filtered = filtered.filter(plan => {
-            if (!plan.paid_at) return false;
-            const paidDate = startOfDay(typeof plan.paid_at === 'string' ? parseISO(plan.paid_at) : plan.paid_at);
+            if (!plan.scheduled_date) return false;
+            const scheduledDate = startOfDay(typeof plan.scheduled_date === 'string' ? parseISO(plan.scheduled_date) : plan.scheduled_date);
             const filterDate = startOfDay(parseISO(selectedDate.value));
-            return paidDate.getTime() === filterDate.getTime();
+            return scheduledDate.getTime() === filterDate.getTime();
         });
     }
 
     // Filter by date range (period)
     if (showPeriodPicker.value && (dateFrom.value || dateTo.value)) {
         filtered = filtered.filter(plan => {
-            if (!plan.paid_at) return false;
+            if (!plan.scheduled_date) return false;
             
-            const paidDate = startOfDay(typeof plan.paid_at === 'string' ? parseISO(plan.paid_at) : plan.paid_at);
+            const scheduledDate = startOfDay(typeof plan.scheduled_date === 'string' ? parseISO(plan.scheduled_date) : plan.scheduled_date);
             
             if (dateFrom.value && dateTo.value) {
                 const from = startOfDay(parseISO(dateFrom.value));
                 const to = endOfDay(parseISO(dateTo.value));
-                return isWithinInterval(paidDate, { start: from, end: to });
+                return isWithinInterval(scheduledDate, { start: from, end: to });
             } else if (dateFrom.value) {
                 const from = startOfDay(parseISO(dateFrom.value));
-                return paidDate >= from;
+                return scheduledDate >= from;
             } else if (dateTo.value) {
                 const to = endOfDay(parseISO(dateTo.value));
-                return paidDate <= to;
+                return scheduledDate <= to;
             }
             
             return true;
@@ -116,13 +116,6 @@ const showConfirmModal = ref(false);
 const confirmAction = ref(null);
 const confirmPlan = ref(null);
 const confirmConfig = ref({ title: '', message: '', variant: 'warning', confirmText: 'Potvrdi' });
-
-// Edit modal state (for name and description only)
-const showEditModal = ref(false);
-const editForm = useForm({
-    name: '',
-    description: '',
-});
 
 // Edit Plan Modal state (with scheduled_date)
 const showEditPlanModal = ref(false);
@@ -181,19 +174,21 @@ const viewPlan = (plan) => {
     openMenuId.value = null;
 };
 
-const openEditModal = (plan) => {
-    editForm.name = plan.name;
-    editForm.description = plan.description || '';
-    confirmPlan.value = plan;
-    showEditModal.value = true;
-    openMenuId.value = null;
-};
-
 const openEditPlanModal = (plan) => {
     editingPlan.value = plan;
     editPlanForm.name = plan.name;
     editPlanForm.description = plan.description || '';
-    editPlanForm.scheduled_date = plan.scheduled_date || new Date().toISOString().split('T')[0];
+    // Convert scheduled_date to YYYY-MM-DD format for date input
+    if (plan.scheduled_date) {
+        try {
+            const date = typeof plan.scheduled_date === 'string' ? parseISO(plan.scheduled_date) : plan.scheduled_date;
+            editPlanForm.scheduled_date = format(date, 'yyyy-MM-dd');
+        } catch {
+            editPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
+        }
+    } else {
+        editPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
+    }
     showEditPlanModal.value = true;
     openMenuId.value = null;
 };
@@ -215,25 +210,6 @@ const closeEditModal = () => {
     showEditPlanModal.value = false;
     editingPlan.value = null;
     editPlanForm.reset();
-};
-
-const handleEditSubmit = () => {
-    if (!confirmPlan.value) return;
-    
-    editForm.put(route('plans.update', confirmPlan.value.id), {
-        preserveScroll: true,
-        onSuccess: () => {
-            showEditModal.value = false;
-            confirmPlan.value = null;
-            editForm.reset();
-        },
-    });
-};
-
-const handleEditCancel = () => {
-    showEditModal.value = false;
-    confirmPlan.value = null;
-    editForm.reset();
 };
 
 const openChangePaidDateModal = (plan) => {
@@ -560,10 +536,6 @@ const submitCreatePlan = () => {
                         <button @click="viewPlan(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                             <EyeIcon class="h-4 w-4" /> {{ __('view_payment') }}
                         </button>
-                        <button v-if="page.props.auth.user?.canModify" @click="openEditModal(plan)" 
-                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50">
-                            <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
-                        </button>
                         <button v-if="page.props.auth.user?.canModify" @click="openEditPlanModal(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50">
                             <CalendarIcon class="h-4 w-4" /> {{ __('edit_plan') }}
@@ -607,61 +579,6 @@ const submitCreatePlan = () => {
             @confirm="handleConfirm"
             @cancel="handleCancel"
         />
-
-        <!-- Edit Modal -->
-        <Modal :show="showEditModal" @close="handleEditCancel" max-width="lg">
-            <div class="p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('edit') }} {{ __('save_plan').toLowerCase() }}</h2>
-                
-                <form @submit.prevent="handleEditSubmit" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ __('plan_name') }}
-                        </label>
-                        <input 
-                            v-model="editForm.name" 
-                            type="text" 
-                            required
-                            maxlength="255"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            :placeholder="__('plan_name_placeholder')"
-                        />
-                        <p v-if="editForm.errors.name" class="mt-1 text-sm text-red-600">{{ editForm.errors.name }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ __('description') }} ({{ __('optional') }})
-                        </label>
-                        <textarea 
-                            v-model="editForm.description" 
-                            rows="3"
-                            maxlength="1000"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            :placeholder="__('plan_description_placeholder')"
-                        ></textarea>
-                        <p v-if="editForm.errors.description" class="mt-1 text-sm text-red-600">{{ editForm.errors.description }}</p>
-                    </div>
-
-                    <div class="flex justify-end gap-3 pt-4">
-                        <button 
-                            type="button" 
-                            @click="handleEditCancel"
-                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                        >
-                            {{ __('cancel') }}
-                        </button>
-                        <button 
-                            type="submit" 
-                            :disabled="editForm.processing"
-                            class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
-                        >
-                            {{ editForm.processing ? __('saving') : __('save') }}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </Modal>
 
         <!-- Edit Plan Modal (with scheduled_date) -->
         <Modal :show="showEditPlanModal" @close="closeEditModal" max-width="lg">

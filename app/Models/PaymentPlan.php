@@ -28,7 +28,7 @@ class PaymentPlan extends Model
     protected $casts = [
         'date_from' => 'date',
         'date_to' => 'date',
-        'scheduled_date' => 'date',
+        'scheduled_date' => 'date:Y-m-d',
         'filters' => 'array',
         'payment_ids' => 'array',
         'total_km' => 'decimal:2',
