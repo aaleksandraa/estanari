@@ -120,6 +120,8 @@
   "unpaid_payments": "pagamenti non pagati",
   "create_new": "Crea nuovo",
   "create_new_plan": "Crea nuovo piano",
+  "plan_name_placeholder": "es. Piano per 05.02.2026",
+  "plan_description_placeholder": "Note aggiuntive sul piano...",
   "plan_for_today": "PIANO per oggi",
   "no_plans_today": "Nessun piano per oggi",
   "create_plan": "Crea piano"

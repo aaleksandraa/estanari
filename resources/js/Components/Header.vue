@@ -1,12 +1,18 @@
 <script setup>
 import { ref } from 'vue';
 import { usePage, router } from '@inertiajs/vue3';
-import { UserIcon } from '@heroicons/vue/24/outline';
+import { UserIcon, PlusIcon } from '@heroicons/vue/24/outline';
 import { useTranslations } from '@/composables/useTranslations';
 
 defineProps({
     title: String,
+    showCreatePlanButton: {
+        type: Boolean,
+        default: false,
+    },
 });
+
+const emit = defineEmits(['create-plan']);
 
 const page = usePage();
 const showUserMenu = ref(false);
@@ -18,6 +24,16 @@ const { __ } = useTranslations();
         <h1 class="text-xl font-semibold text-gray-900">{{ title }}</h1>
 
         <div class="flex items-center gap-4">
+            <!-- Create Plan Button (only on Dashboard) -->
+            <button
+                v-if="showCreatePlanButton"
+                @click="emit('create-plan')"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+                <PlusIcon class="h-5 w-5" />
+                {{ __('create_new_plan') }}
+            </button>
+
             <!-- User menu -->
             <div class="relative">
                 <button

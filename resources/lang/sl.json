@@ -120,6 +120,8 @@
   "unpaid_payments": "neplačanih plačil",
   "create_new": "Ustvari novo",
   "create_new_plan": "Ustvari nov načrt",
+  "plan_name_placeholder": "npr. Načrt za 05.02.2026",
+  "plan_description_placeholder": "Dodatne opombe o načrtu...",
   "plan_for_today": "NAČRT za danes",
   "no_plans_today": "Ni načrtov za danes",
   "create_plan": "Ustvari načrt"

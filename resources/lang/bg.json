@@ -120,6 +120,8 @@
   "unpaid_payments": "неплатени плащания",
   "create_new": "Създай нов",
   "create_new_plan": "Създай нов план",
+  "plan_name_placeholder": "напр. План за 05.02.2026",
+  "plan_description_placeholder": "Допълнителни бележки за плана...",
   "plan_for_today": "ПЛАН за днес",
   "no_plans_today": "Няма планове за днес",
   "create_plan": "Създай план"

@@ -120,6 +120,8 @@
   "unpaid_payments": "fizetetlen kifizetések",
   "create_new": "Új létrehozása",
   "create_new_plan": "Új terv létrehozása",
+  "plan_name_placeholder": "pl. Terv 05.02.2026-ra",
+  "plan_description_placeholder": "További megjegyzések a tervről...",
   "plan_for_today": "TERV mára",
   "no_plans_today": "Nincs terv mára",
   "create_plan": "Terv létrehozása"

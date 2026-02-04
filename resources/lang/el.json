@@ -120,6 +120,8 @@
   "unpaid_payments": "απλήρωτες πληρωμές",
   "create_new": "Δημιουργία νέου",
   "create_new_plan": "Δημιουργία νέου σχεδίου",
+  "plan_name_placeholder": "π.χ. Σχέδιο για 05.02.2026",
+  "plan_description_placeholder": "Πρόσθετες σημειώσεις για το σχέδιο...",
   "plan_for_today": "ΣΧΕΔΙΟ για σήμερα",
   "no_plans_today": "Δεν υπάρχουν σχέδια για σήμερα",
   "create_plan": "Δημιουργία σχεδίου"
