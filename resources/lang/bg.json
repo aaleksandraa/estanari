@@ -117,5 +117,10 @@
   "overdue": "Не е платено навреме",
   "total_today": "За плащане днес",
   "total_unpaid_period": "Общо неплатено",
-  "unpaid_payments": "неплатени плащания"
+  "unpaid_payments": "неплатени плащания",
+  "create_new": "Създай нов",
+  "create_new_plan": "Създай нов план",
+  "plan_for_today": "ПЛАН за днес",
+  "no_plans_today": "Няма планове за днес",
+  "create_plan": "Създай план"
 }

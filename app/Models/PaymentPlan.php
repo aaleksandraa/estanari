@@ -13,6 +13,7 @@ class PaymentPlan extends Model
         'date_from',
         'date_to',
         'date_filter',
+        'scheduled_date',
         'filters',
         'payment_ids',
         'total_km',
@@ -27,6 +28,7 @@ class PaymentPlan extends Model
     protected $casts = [
         'date_from' => 'date',
         'date_to' => 'date',
+        'scheduled_date' => 'date',
         'filters' => 'array',
         'payment_ids' => 'array',
         'total_km' => 'decimal:2',

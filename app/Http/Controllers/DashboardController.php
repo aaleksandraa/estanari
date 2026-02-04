@@ -159,12 +159,28 @@ class DashboardController extends Controller
         $branches = Branch::where('is_active', true)->orderBy('name')->get(['id', 'name', 'supplier_id']);
         $plans = \App\Models\PaymentPlan::orderBy('created_at', 'desc')->get(['id', 'name']);
 
+        // Get today's plans
+        $exchangeRates = Setting::getExchangeRates();
+        $todayPlans = \App\Models\PaymentPlan::with('creator:id,name')
+            ->whereDate('scheduled_date', $today)
+            ->get()
+            ->map(function ($plan) use ($exchangeRates) {
+                $plan->total_km_equivalent = 
+                    $plan->total_km + 
+                    ($plan->total_eur * $exchangeRates['EUR']) + 
+                    ($plan->total_usd * $exchangeRates['USD']);
+                return $plan;
+            })
+            ->sortByDesc('total_km_equivalent')
+            ->values();
+
         return Inertia::render('Dashboard', [
             'payments' => $payments,
             'stats' => $stats,
             'suppliers' => $suppliers,
             'branches' => $branches,
             'plans' => $plans,
+            'todayPlans' => $todayPlans,
             'filters' => [
                 'date_filter' => $dateFilter,
                 'start_date' => $startDate,

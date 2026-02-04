@@ -7,14 +7,15 @@ import StatCard from '@/Components/Dashboard/StatCard.vue';
 import PaymentTable from '@/Components/Dashboard/PaymentTable.vue';
 import CurrencySummary from '@/Components/Dashboard/CurrencySummary.vue';
 import Modal from '@/Components/Modal.vue';
-import { CreditCardIcon, ClockIcon, CheckCircleIcon, ExclamationCircleIcon, PlusIcon, ArrowDownTrayIcon, CheckIcon, FunnelIcon, XMarkIcon, BookmarkIcon, MagnifyingGlassIcon } from '@heroicons/vue/24/outline';
+import { CreditCardIcon, ClockIcon, CheckCircleIcon, ExclamationCircleIcon, PlusIcon, ArrowDownTrayIcon, CheckIcon, FunnelIcon, XMarkIcon, BookmarkIcon, MagnifyingGlassIcon, CalendarIcon } from '@heroicons/vue/24/outline';
+import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/vue/24/solid';
 import DateInput from '@/Components/DateInput.vue';
 import Autocomplete from '@/Components/Autocomplete.vue';
 import { useTranslations } from '@/composables/useTranslations';
 
 const { __, t } = useTranslations();
 
-const props = defineProps({ payments: Array, stats: Object, suppliers: Array, branches: Array, filters: Object, plans: Array });
+const props = defineProps({ payments: Array, stats: Object, suppliers: Array, branches: Array, filters: Object, plans: Array, todayPlans: Array });
 const page = usePage();
 
 const selectedIds = ref([]);
@@ -285,12 +286,82 @@ const showOverdueOnly = () => {
     branchFilter.value = '';
     router.get(route('dashboard'), { date_filter: 'overdue' }, { preserveState: true });
 };
+
+const formatCurrency = (value) => {
+    return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+};
+
+const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('bs-BA');
+};
+
+const navigateToPlan = (planId) => {
+    router.get(route('plans.show', planId));
+};
 </script>
 
 <template>
     <MainLayout>
         <Header :title="__('payments_overview')" />
         <div class="p-6 space-y-6">
+            <!-- Today's Plans Block -->
+            <div v-if="todayPlans && todayPlans.length > 0" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                        <CalendarIcon class="h-6 w-6 text-blue-600" />
+                        {{ __('plan_for_today') }}
+                    </h2>
+                    <span class="text-sm text-gray-600">
+                        {{ formatDate(new Date()) }}
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div 
+                        v-for="plan in todayPlans" 
+                        :key="plan.id"
+                        @click="navigateToPlan(plan.id)"
+                        :class="[
+                            'group relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md',
+                            plan.is_paid 
+                                ? 'bg-green-50 border-green-200 hover:border-green-300' 
+                                : 'bg-white border-blue-200 hover:border-blue-300'
+                        ]"
+                    >
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 :class="[
+                                'font-semibold text-base',
+                                plan.is_paid ? 'text-green-800' : 'text-gray-900'
+                            ]">
+                                {{ plan.name }}
+                            </h3>
+                            <span v-if="plan.is_paid" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                <CheckCircleSolidIcon class="h-3.5 w-3.5" /> {{ __('paid_status') }}
+                            </span>
+                        </div>
+                        
+                        <p v-if="plan.description" class="text-sm text-gray-600 mb-3 line-clamp-2">
+                            {{ plan.description }}
+                        </p>
+                        
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">{{ __('invoices') }}:</span>
+                                <span class="font-semibold text-gray-900">{{ plan.payment_count }}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="text-gray-600">{{ __('total') }}:</span>
+                                <div class="text-right">
+                                    <div class="font-semibold text-blue-600">{{ formatCurrency(plan.total_km) }} KM</div>
+                                    <div v-if="plan.total_eur > 0" class="text-xs text-green-600">{{ formatCurrency(plan.total_eur) }} EUR</div>
+                                    <div v-if="plan.total_usd > 0" class="text-xs text-purple-600">{{ formatCurrency(plan.total_usd) }} USD</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Stats -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard :title="__('today_to_pay')" :value="stats.todayCount.toString()" :subtitle="__('planned_payments')" :icon="ClockIcon" variant="warning" />

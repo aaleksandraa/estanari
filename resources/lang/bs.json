@@ -217,5 +217,10 @@
   "plan_name_placeholder": "npr. Plan za 05.02.2026",
   "plan_description_placeholder": "Dodatne napomene o planu...",
   "optional": "opcionalno",
-  "change_paid_date": "Promijeni datum plaćanja"
+  "change_paid_date": "Promijeni datum plaćanja",
+  "create_new": "Kreiraj novi",
+  "create_new_plan": "Kreiraj novi plan",
+  "plan_for_today": "PLAN za današnji dan",
+  "no_plans_today": "Nema planova za danas",
+  "create_plan": "Kreiraj plan"
 }

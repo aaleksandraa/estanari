@@ -32,17 +32,26 @@ class PaymentPlanController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'date_filter' => 'required|string',
+            'scheduled_date' => 'nullable|date',
+            'date_filter' => 'nullable|string',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date',
             'filters' => 'nullable|array',
-            'payment_ids' => 'required|array|min:1',
-            'total_km' => 'required|numeric',
-            'total_eur' => 'required|numeric',
+            'payment_ids' => 'nullable|array',
+            'total_km' => 'nullable|numeric',
+            'total_eur' => 'nullable|numeric',
             'total_usd' => 'nullable|numeric',
         ]);
 
+        // Backward compatibility: Set scheduled_date to today if not provided
+        $validated['scheduled_date'] = $validated['scheduled_date'] ?? today();
+
+        // Set defaults for empty plans
+        $validated['payment_ids'] = $validated['payment_ids'] ?? [];
         $validated['payment_count'] = count($validated['payment_ids']);
+        $validated['total_km'] = $validated['total_km'] ?? 0;
+        $validated['total_eur'] = $validated['total_eur'] ?? 0;
+        $validated['total_usd'] = $validated['total_usd'] ?? 0;
         $validated['created_by'] = auth()->id();
 
         PaymentPlan::create($validated);
@@ -55,6 +64,7 @@ class PaymentPlanController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
+            'scheduled_date' => 'nullable|date',
         ]);
 
         $plan->update($validated);

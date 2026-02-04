@@ -117,5 +117,10 @@
   "overdue": "Ni plačano pravočasno",
   "total_today": "Danes za plačilo",
   "total_unpaid_period": "Skupaj neplačano",
-  "unpaid_payments": "neplačanih plačil"
+  "unpaid_payments": "neplačanih plačil",
+  "create_new": "Ustvari novo",
+  "create_new_plan": "Ustvari nov načrt",
+  "plan_for_today": "NAČRT za danes",
+  "no_plans_today": "Ni načrtov za danes",
+  "create_plan": "Ustvari načrt"
 }

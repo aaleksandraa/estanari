@@ -117,5 +117,10 @@
   "overdue": "Nem fizetve időben",
   "total_today": "Ma fizetendő",
   "total_unpaid_period": "Összesen fizetetlen",
-  "unpaid_payments": "fizetetlen kifizetések"
+  "unpaid_payments": "fizetetlen kifizetések",
+  "create_new": "Új létrehozása",
+  "create_new_plan": "Új terv létrehozása",
+  "plan_for_today": "TERV mára",
+  "no_plans_today": "Nincs terv mára",
+  "create_plan": "Terv létrehozása"
 }

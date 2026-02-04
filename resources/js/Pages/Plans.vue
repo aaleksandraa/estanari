@@ -10,7 +10,7 @@ import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-f
 import {
     CalendarIcon, EllipsisHorizontalIcon, EyeIcon, TrashIcon, ArrowDownTrayIcon,
     DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon, PencilIcon,
-    MagnifyingGlassIcon, FunnelIcon, XMarkIcon
+    MagnifyingGlassIcon, FunnelIcon, XMarkIcon, PlusIcon
 } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/vue/24/solid';
 import { useTranslations } from '@/composables/useTranslations';
@@ -21,6 +21,14 @@ const props = defineProps({ plans: Array });
 const page = usePage();
 const openMenuId = ref(null);
 const processing = ref(false);
+
+// Create Plan Modal state
+const showCreatePlanModal = ref(false);
+const createPlanForm = useForm({
+    name: '',
+    description: '',
+    scheduled_date: new Date().toISOString().split('T')[0],
+});
 
 // Filter states
 const searchQuery = ref('');
@@ -303,12 +311,34 @@ const getDateFilterLabel = (filter) => {
     };
     return labels[filter] || filter;
 };
+
+const submitCreatePlan = () => {
+    createPlanForm.post(route('plans.store'), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showCreatePlanModal.value = false;
+            createPlanForm.reset();
+            createPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
+        },
+    });
+};
 </script>
 
 <template>
     <MainLayout>
         <Header :title="__('saved_plans')" />
         <div class="p-6 space-y-6">
+            <!-- Create New Plan Button -->
+            <div v-if="page.props.auth.user?.canModify" class="flex justify-end">
+                <button
+                    @click="showCreatePlanModal = true"
+                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                    <PlusIcon class="h-5 w-5" />
+                    {{ __('create_new') }}
+                </button>
+            </div>
+
             <!-- Filters Section - Single Row -->
             <div class="bg-white rounded-xl border border-gray-200 p-4">
                 <div class="flex flex-wrap items-center gap-3">
@@ -624,6 +654,73 @@ const getDateFilterLabel = (filter) => {
                             class="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50"
                         >
                             {{ changePaidDateForm.processing ? __('saving') : __('save') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Create Plan Modal -->
+        <Modal :show="showCreatePlanModal" @close="showCreatePlanModal = false" max-width="lg">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('create_new_plan') }}</h2>
+                
+                <form @submit.prevent="submitCreatePlan" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('plan_name') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            v-model="createPlanForm.name" 
+                            type="text" 
+                            required
+                            maxlength="255"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            :placeholder="__('plan_name_placeholder')"
+                        />
+                        <p v-if="createPlanForm.errors.name" class="mt-1 text-sm text-red-600">{{ createPlanForm.errors.name }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('description') }} ({{ __('optional') }})
+                        </label>
+                        <textarea 
+                            v-model="createPlanForm.description" 
+                            rows="3"
+                            maxlength="1000"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            :placeholder="__('plan_description_placeholder')"
+                        ></textarea>
+                        <p v-if="createPlanForm.errors.description" class="mt-1 text-sm text-red-600">{{ createPlanForm.errors.description }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('payment_date') }} <span class="text-red-500">*</span>
+                        </label>
+                        <DateInput
+                            v-model="createPlanForm.scheduled_date"
+                            :placeholder="__('select_payment_date')"
+                            required
+                        />
+                        <p v-if="createPlanForm.errors.scheduled_date" class="mt-1 text-sm text-red-600">{{ createPlanForm.errors.scheduled_date }}</p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button 
+                            type="button" 
+                            @click="showCreatePlanModal = false"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            {{ __('cancel') }}
+                        </button>
+                        <button 
+                            type="submit" 
+                            :disabled="createPlanForm.processing"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                        >
+                            {{ createPlanForm.processing ? __('saving') : __('create_plan') }}
                         </button>
                     </div>
                 </form>

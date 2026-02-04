@@ -117,5 +117,10 @@
   "overdue": "Non pagato in tempo",
   "total_today": "Da pagare oggi",
   "total_unpaid_period": "Totale non pagato",
-  "unpaid_payments": "pagamenti non pagati"
+  "unpaid_payments": "pagamenti non pagati",
+  "create_new": "Crea nuovo",
+  "create_new_plan": "Crea nuovo piano",
+  "plan_for_today": "PIANO per oggi",
+  "no_plans_today": "Nessun piano per oggi",
+  "create_plan": "Crea piano"
 }
