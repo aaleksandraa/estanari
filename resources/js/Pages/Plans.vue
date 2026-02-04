@@ -419,27 +419,21 @@ const getDateFilterLabel = (filter) => {
                     :class="['group relative rounded-xl border overflow-hidden hover:shadow-lg transition-all cursor-pointer',
                         plan.is_paid ? 'border-green-200 bg-green-50/30' : 'border-gray-200 bg-white hover:border-blue-200']"
                     @click="viewPlan(plan)">
-                    
-                    <!-- Paid Badge -->
-                    <div v-if="plan.is_paid" class="absolute top-3 right-12 z-10">
-                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                            <CheckCircleSolidIcon class="h-3.5 w-3.5" /> {{ __('paid_status') }}
-                        </span>
-                    </div>
 
                     <!-- Card Header -->
                     <div class="p-5 pb-3">
-                        <div class="flex items-start justify-between">
-                            <div class="flex-1 min-w-0 pr-16">
+                        <div class="flex items-start justify-between gap-2 mb-1">
+                            <div class="flex items-center gap-2 flex-1 min-w-0">
                                 <h3 :class="['font-semibold truncate transition-colors', plan.is_paid ? 'text-green-800' : 'text-gray-900 group-hover:text-blue-600']">
                                     {{ plan.name }}
                                 </h3>
-                                <p v-if="plan.description" class="text-sm text-gray-500 mt-1 line-clamp-2">
-                                    {{ plan.description }}
-                                </p>
+                                <!-- Paid Badge - inline with title -->
+                                <span v-if="plan.is_paid" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 whitespace-nowrap flex-shrink-0">
+                                    <CheckCircleSolidIcon class="h-3.5 w-3.5" /> {{ __('paid_status') }}
+                                </span>
                             </div>
                             <!-- Menu -->
-                            <div class="relative ml-2" @click.stop>
+                            <div class="relative flex-shrink-0" @click.stop>
                                 <button 
                                     :data-menu-button="plan.id"
                                     @click="openMenuId = openMenuId === plan.id ? null : plan.id" 
@@ -448,6 +442,9 @@ const getDateFilterLabel = (filter) => {
                                 </button>
                             </div>
                         </div>
+                        <p v-if="plan.description" class="text-sm text-gray-500 mt-1 line-clamp-2">
+                            {{ plan.description }}
+                        </p>
                     </div>
 
                     <!-- Stats -->
@@ -501,8 +498,8 @@ const getDateFilterLabel = (filter) => {
                             <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
                         </button>
                         <button v-if="plan.is_paid && page.props.auth.user?.canModify" @click="openChangePaidDateModal(plan)" 
-                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-orange-600 hover:bg-orange-50">
-                            <CalendarIcon class="h-4 w-4" /> Promijeni datum plaćanja
+                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <CalendarIcon class="h-4 w-4" /> {{ __('change_paid_date') }}
                         </button>
                         <button v-if="!plan.is_paid && page.props.auth.user?.canModify" @click="openMarkAsPaidConfirm(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
