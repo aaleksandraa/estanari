@@ -86,9 +86,16 @@ class PaymentPlanController extends Controller
             ->sortByDesc('amount_in_km')
             ->values();
 
-        // Get available payments (not in this plan, status PLANNED)
+        // Get all payment IDs that are already in any plan
+        $usedPaymentIds = PaymentPlan::whereNotNull('payment_ids')
+            ->pluck('payment_ids')
+            ->flatten()
+            ->unique()
+            ->toArray();
+
+        // Get available payments (not in any plan, status PLANNED)
         $availablePayments = Payment::with(['supplier:id,name', 'branch:id,name'])
-            ->whereNotIn('id', $plan->payment_ids ?? [])
+            ->whereNotIn('id', $usedPaymentIds)
             ->where('status', 'PLANNED')
             ->orderBy('planned_date')
             ->get();
