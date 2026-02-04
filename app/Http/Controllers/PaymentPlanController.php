@@ -270,7 +270,7 @@ class PaymentPlanController extends Controller
         $csv .= "UKUPNO USD:;;" . number_format($plan->total_usd ?? 0, 2, ',', '.') . ";USD\n";
         $csv .= "Broj plaćanja:;;" . $plan->payment_count . "\n";
 
-        $filename = \Str::slug($plan->name) . '.csv';
+        $filename = \Str::slug(str_replace('.', '-', $plan->name)) . '.csv';
 
         return response($csv)
             ->header('Content-Type', 'text/csv; charset=UTF-8')
@@ -295,7 +295,7 @@ class PaymentPlanController extends Controller
 
         return response($html)
             ->header('Content-Type', 'text/html; charset=UTF-8')
-            ->header('Content-Disposition', 'attachment; filename="' . \Str::slug($plan->name) . '.html"');
+            ->header('Content-Disposition', 'attachment; filename="' . \Str::slug(str_replace('.', '-', $plan->name)) . '.html"');
     }
 
     public function exportExcel(PaymentPlan $plan): StreamedResponse
@@ -379,7 +379,7 @@ class PaymentPlanController extends Controller
         
         $excel->autoSizeColumns($colCount);
 
-        $filename = \Str::slug($plan->name) . '.xlsx';
+        $filename = \Str::slug(str_replace('.', '-', $plan->name)) . '.xlsx';
         return $excel->download($filename);
     }
 
