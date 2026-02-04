@@ -328,8 +328,6 @@ const submitCreatePlan = () => {
     <MainLayout>
         <Header 
             :title="__('payments_overview')" 
-            :showCreatePlanButton="page.props.auth.user?.canModify"
-            @create-plan="openCreatePlanModal"
         />
         <div class="p-6 space-y-6">
             <!-- Today's Plans Block -->
