@@ -1,14 +1,15 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { router, usePage, useForm } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import Header from '@/Components/Header.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Modal from '@/Components/Modal.vue';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import {
     CalendarIcon, EllipsisHorizontalIcon, EyeIcon, TrashIcon, ArrowDownTrayIcon,
-    DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon, PencilIcon
+    DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon, PencilIcon,
+    MagnifyingGlassIcon, FunnelIcon, XMarkIcon
 } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/vue/24/solid';
 import { useTranslations } from '@/composables/useTranslations';
@@ -19,7 +20,72 @@ const props = defineProps({ plans: Array });
 const page = usePage();
 const openMenuId = ref(null);
 const processing = ref(false);
-const menuButtonRefs = ref({});
+
+// Filter states
+const searchQuery = ref('');
+const statusFilter = ref('all'); // all, paid, unpaid
+const dateFrom = ref('');
+const dateTo = ref('');
+
+// Filtered plans computed property
+const filteredPlans = computed(() => {
+    let filtered = [...props.plans];
+
+    // Search by name or description
+    if (searchQuery.value.trim()) {
+        const query = searchQuery.value.toLowerCase();
+        filtered = filtered.filter(plan => 
+            plan.name.toLowerCase().includes(query) ||
+            (plan.description && plan.description.toLowerCase().includes(query))
+        );
+    }
+
+    // Filter by status
+    if (statusFilter.value === 'paid') {
+        filtered = filtered.filter(plan => plan.is_paid);
+    } else if (statusFilter.value === 'unpaid') {
+        filtered = filtered.filter(plan => !plan.is_paid);
+    }
+
+    // Filter by date range (paid_at date)
+    if (dateFrom.value || dateTo.value) {
+        filtered = filtered.filter(plan => {
+            if (!plan.paid_at) return false;
+            
+            const paidDate = startOfDay(typeof plan.paid_at === 'string' ? parseISO(plan.paid_at) : plan.paid_at);
+            
+            if (dateFrom.value && dateTo.value) {
+                const from = startOfDay(parseISO(dateFrom.value));
+                const to = endOfDay(parseISO(dateTo.value));
+                return isWithinInterval(paidDate, { start: from, end: to });
+            } else if (dateFrom.value) {
+                const from = startOfDay(parseISO(dateFrom.value));
+                return paidDate >= from;
+            } else if (dateTo.value) {
+                const to = endOfDay(parseISO(dateTo.value));
+                return paidDate <= to;
+            }
+            
+            return true;
+        });
+    }
+
+    return filtered;
+});
+
+const clearFilters = () => {
+    searchQuery.value = '';
+    statusFilter.value = 'all';
+    dateFrom.value = '';
+    dateTo.value = '';
+};
+
+const hasActiveFilters = computed(() => {
+    return searchQuery.value.trim() !== '' || 
+           statusFilter.value !== 'all' || 
+           dateFrom.value !== '' || 
+           dateTo.value !== '';
+});
 
 // Confirm modal state
 const showConfirmModal = ref(false);
@@ -185,8 +251,75 @@ const getDateFilterLabel = (filter) => {
     <MainLayout>
         <Header :title="__('saved_plans')" />
         <div class="p-6 space-y-6">
+            <!-- Filters Section -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
+                <!-- Search Bar -->
+                <div class="flex items-center gap-3">
+                    <div class="flex-1 relative">
+                        <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <input
+                            v-model="searchQuery"
+                            type="text"
+                            :placeholder="__('search') + ' ' + __('saved_plans').toLowerCase() + '...'"
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+                    <button
+                        v-if="hasActiveFilters"
+                        @click="clearFilters"
+                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                    >
+                        <XMarkIcon class="h-4 w-4" />
+                        {{ __('clear_filters') }}
+                    </button>
+                </div>
+
+                <!-- Filter Options -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <FunnelIcon class="h-4 w-4 text-gray-500" />
+                        <span class="text-sm font-medium text-gray-700">{{ __('filters') }}:</span>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <select
+                        v-model="statusFilter"
+                        class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                        <option value="all">{{ __('all_statuses') }}</option>
+                        <option value="paid">{{ __('paid_status') }}</option>
+                        <option value="unpaid">{{ __('unpaid') }}</option>
+                    </select>
+
+                    <!-- Date From -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600">{{ __('from') }}:</label>
+                        <input
+                            v-model="dateFrom"
+                            type="date"
+                            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+
+                    <!-- Date To -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600">{{ __('to') }}:</label>
+                        <input
+                            v-model="dateTo"
+                            type="date"
+                            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                    </div>
+
+                    <!-- Results Count -->
+                    <div class="ml-auto text-sm text-gray-500">
+                        {{ filteredPlans.length }} {{ filteredPlans.length === 1 ? __('plan') : __('plans') }}
+                    </div>
+                </div>
+            </div>
+
             <!-- Empty State -->
-            <div v-if="plans.length === 0" class="flex flex-col items-center justify-center py-16 text-gray-500">
+            <div v-if="filteredPlans.length === 0 && !hasActiveFilters" class="flex flex-col items-center justify-center py-16 text-gray-500">
                 <ClipboardDocumentListIcon class="h-16 w-16 mb-4 opacity-40" />
                 <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('no_saved_plans') }}</h3>
                 <p class="text-sm text-center max-w-md">
@@ -194,9 +327,24 @@ const getDateFilterLabel = (filter) => {
                 </p>
             </div>
 
+            <!-- No Results State -->
+            <div v-else-if="filteredPlans.length === 0 && hasActiveFilters" class="flex flex-col items-center justify-center py-16 text-gray-500">
+                <FunnelIcon class="h-16 w-16 mb-4 opacity-40" />
+                <h3 class="text-lg font-medium text-gray-900 mb-2">{{ __('no_results') }}</h3>
+                <p class="text-sm text-center max-w-md mb-4">
+                    {{ __('no_results_desc') }}
+                </p>
+                <button
+                    @click="clearFilters"
+                    class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+                >
+                    {{ __('clear_filters') }}
+                </button>
+            </div>
+
             <!-- Plans Grid -->
             <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div v-for="plan in plans" :key="plan.id" 
+                <div v-for="plan in filteredPlans" :key="plan.id" 
                     :class="['group relative rounded-xl border overflow-hidden hover:shadow-lg transition-all cursor-pointer',
                         plan.is_paid ? 'border-green-200 bg-green-50/30' : 'border-gray-200 bg-white hover:border-blue-200']"
                     @click="viewPlan(plan)">
@@ -270,7 +418,7 @@ const getDateFilterLabel = (filter) => {
         <Teleport to="body">
             <div v-if="openMenuId !== null">
                 <div @click="openMenuId = null" class="fixed inset-0 z-30"></div>
-                <div v-for="plan in plans" :key="'menu-' + plan.id">
+                <div v-for="plan in filteredPlans" :key="'menu-' + plan.id">
                     <div v-if="openMenuId === plan.id" 
                         class="fixed w-52 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-40"
                         :style="getMenuPosition(plan.id)">
