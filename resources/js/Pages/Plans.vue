@@ -5,6 +5,7 @@ import MainLayout from '@/Layouts/MainLayout.vue';
 import Header from '@/Components/Header.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
 import Modal from '@/Components/Modal.vue';
+import DateInput from '@/Components/DateInput.vue';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import {
     CalendarIcon, EllipsisHorizontalIcon, EyeIcon, TrashIcon, ArrowDownTrayIcon,
@@ -24,6 +25,8 @@ const processing = ref(false);
 // Filter states
 const searchQuery = ref('');
 const statusFilter = ref('all'); // all, paid, unpaid
+const selectedDate = ref('');
+const showPeriodPicker = ref(false);
 const dateFrom = ref('');
 const dateTo = ref('');
 
@@ -47,8 +50,18 @@ const filteredPlans = computed(() => {
         filtered = filtered.filter(plan => !plan.is_paid);
     }
 
-    // Filter by date range (paid_at date)
-    if (dateFrom.value || dateTo.value) {
+    // Filter by single date
+    if (selectedDate.value && !showPeriodPicker.value) {
+        filtered = filtered.filter(plan => {
+            if (!plan.paid_at) return false;
+            const paidDate = startOfDay(typeof plan.paid_at === 'string' ? parseISO(plan.paid_at) : plan.paid_at);
+            const filterDate = startOfDay(parseISO(selectedDate.value));
+            return paidDate.getTime() === filterDate.getTime();
+        });
+    }
+
+    // Filter by date range (period)
+    if (showPeriodPicker.value && (dateFrom.value || dateTo.value)) {
         filtered = filtered.filter(plan => {
             if (!plan.paid_at) return false;
             
@@ -76,6 +89,8 @@ const filteredPlans = computed(() => {
 const clearFilters = () => {
     searchQuery.value = '';
     statusFilter.value = 'all';
+    selectedDate.value = '';
+    showPeriodPicker.value = false;
     dateFrom.value = '';
     dateTo.value = '';
 };
@@ -83,6 +98,7 @@ const clearFilters = () => {
 const hasActiveFilters = computed(() => {
     return searchQuery.value.trim() !== '' || 
            statusFilter.value !== 'all' || 
+           selectedDate.value !== '' ||
            dateFrom.value !== '' || 
            dateTo.value !== '';
 });
@@ -251,68 +267,81 @@ const getDateFilterLabel = (filter) => {
     <MainLayout>
         <Header :title="__('saved_plans')" />
         <div class="p-6 space-y-6">
-            <!-- Filters Section -->
-            <div class="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-                <!-- Search Bar -->
-                <div class="flex items-center gap-3">
-                    <div class="flex-1 relative">
+            <!-- Filters Section - Single Row -->
+            <div class="bg-white rounded-xl border border-gray-200 p-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Search -->
+                    <div class="flex-1 min-w-[250px] relative">
                         <MagnifyingGlassIcon class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                         <input
                             v-model="searchQuery"
                             type="text"
-                            :placeholder="__('search') + ' ' + __('saved_plans').toLowerCase() + '...'"
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            :placeholder="__('search') + '...'"
+                            class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                         />
-                    </div>
-                    <button
-                        v-if="hasActiveFilters"
-                        @click="clearFilters"
-                        class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                    >
-                        <XMarkIcon class="h-4 w-4" />
-                        {{ __('clear_filters') }}
-                    </button>
-                </div>
-
-                <!-- Filter Options -->
-                <div class="flex flex-wrap items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <FunnelIcon class="h-4 w-4 text-gray-500" />
-                        <span class="text-sm font-medium text-gray-700">{{ __('filters') }}:</span>
                     </div>
 
                     <!-- Status Filter -->
                     <select
                         v-model="statusFilter"
-                        class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="min-w-[160px] px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     >
                         <option value="all">{{ __('all_statuses') }}</option>
                         <option value="paid">{{ __('paid_status') }}</option>
                         <option value="unpaid">{{ __('unpaid') }}</option>
                     </select>
 
-                    <!-- Date From -->
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600">{{ __('from') }}:</label>
-                        <input
-                            v-model="dateFrom"
-                            type="date"
-                            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
+                    <!-- Single Date Picker (when period is not active) -->
+                    <DateInput
+                        v-if="!showPeriodPicker"
+                        v-model="selectedDate"
+                        :placeholder="__('date')"
+                        class="min-w-[160px]"
+                    />
 
-                    <!-- Date To -->
-                    <div class="flex items-center gap-2">
-                        <label class="text-sm text-gray-600">{{ __('to') }}:</label>
-                        <input
-                            v-model="dateTo"
-                            type="date"
-                            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
+                    <!-- Period Button -->
+                    <button
+                        @click="showPeriodPicker = !showPeriodPicker"
+                        :class="[
+                            'px-4 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap',
+                            showPeriodPicker 
+                                ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ]"
+                    >
+                        {{ __('period') }}
+                    </button>
+
+                    <!-- Period Date Pickers (when period is active) -->
+                    <template v-if="showPeriodPicker">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600 whitespace-nowrap">{{ __('from') }}:</span>
+                            <DateInput
+                                v-model="dateFrom"
+                                :placeholder="__('date')"
+                            />
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600 whitespace-nowrap">{{ __('to') }}:</span>
+                            <DateInput
+                                v-model="dateTo"
+                                :placeholder="__('date')"
+                            />
+                        </div>
+                    </template>
+
+                    <!-- Clear Filters Button -->
+                    <button
+                        v-if="hasActiveFilters"
+                        @click="clearFilters"
+                        class="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                        <XMarkIcon class="h-4 w-4" />
+                        {{ __('clear') }}
+                    </button>
 
                     <!-- Results Count -->
-                    <div class="ml-auto text-sm text-gray-500">
+                    <div class="ml-auto text-sm font-medium text-gray-600 whitespace-nowrap">
                         {{ filteredPlans.length }} {{ filteredPlans.length === 1 ? __('plan') : __('plans') }}
                     </div>
                 </div>
