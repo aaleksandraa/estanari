@@ -502,7 +502,7 @@ const getDateFilterLabel = (filter) => {
                         </button>
                         <button v-if="plan.is_paid && page.props.auth.user?.canModify" @click="openChangePaidDateModal(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-orange-600 hover:bg-orange-50">
-                            <CalendarIcon class="h-4 w-4" /> {{ __('change_paid_date') }}
+                            <CalendarIcon class="h-4 w-4" /> Promijeni datum plaćanja
                         </button>
                         <button v-if="!plan.is_paid && page.props.auth.user?.canModify" @click="openMarkAsPaidConfirm(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
@@ -598,7 +598,7 @@ const getDateFilterLabel = (filter) => {
         <!-- Change Paid Date Modal -->
         <Modal :show="showChangePaidDateModal" @close="handleChangePaidDateCancel" max-width="md">
             <div class="p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('change_paid_date') }}</h2>
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Promijeni datum plaćanja</h2>
                 
                 <form @submit.prevent="handleChangePaidDateSubmit" class="space-y-4">
                     <div>
