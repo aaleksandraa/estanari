@@ -138,7 +138,12 @@ class PaymentPlanController extends Controller
         // Update plan paid_at date
         $plan->update(['paid_at' => $validated['paid_date']]);
 
-        return back()->with('success', 'Datum plaćanja uspješno promijenjen.');
+        // Update paid_date for all PAID payments in this plan
+        $updatedCount = Payment::whereIn('id', $plan->payment_ids ?? [])
+            ->where('status', 'PAID')
+            ->update(['paid_date' => $validated['paid_date']]);
+
+        return back()->with('success', "Datum plaćanja uspješno promijenjen. Ažurirano {$updatedCount} plaćanja.");
     }
 
     public function addPayment(Request $request, PaymentPlan $plan): RedirectResponse
