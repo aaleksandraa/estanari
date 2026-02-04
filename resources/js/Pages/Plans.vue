@@ -122,6 +122,12 @@ const formatDateTime = (dateStr) => {
     catch { return dateStr; }
 };
 
+const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    try { return format(typeof dateStr === 'string' ? parseISO(dateStr) : dateStr, 'dd.MM.yyyy'); }
+    catch { return dateStr; }
+};
+
 const formatCurrency = (amount) => {
     return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 };
@@ -434,7 +440,7 @@ const getDateFilterLabel = (filter) => {
                                 <span>{{ getDateFilterLabel(plan.date_filter) }}</span>
                             </div>
                             <span v-if="plan.is_paid && plan.paid_at" class="text-green-600">
-                                {{ __('paid_at') }} {{ formatDateTime(plan.paid_at) }}
+                                {{ __('paid_at') }} {{ formatDate(plan.paid_at) }}
                             </span>
                             <span v-else>{{ formatDateTime(plan.created_at) }}</span>
                         </div>

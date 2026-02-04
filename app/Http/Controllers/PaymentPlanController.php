@@ -122,8 +122,9 @@ class PaymentPlanController extends Controller
             $paidCount++;
         }
 
-        // Update plan status
-        $plan->update(['is_paid' => true, 'paid_at' => now()]);
+        // Update plan status - use the selected paid_date or current time
+        $paidAt = $validated['paid_date'] ?? now();
+        $plan->update(['is_paid' => true, 'paid_at' => $paidAt]);
 
         return back()->with('success', "Plan označen kao plaćen. Ukupno {$paidCount} plaćanja označeno.");
     }
