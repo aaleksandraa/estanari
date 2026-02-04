@@ -50,6 +50,18 @@ class PaymentPlanController extends Controller
         return back()->with('success', 'Plan uspješno spremljen.');
     }
 
+    public function update(Request $request, PaymentPlan $plan): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        $plan->update($validated);
+
+        return back()->with('success', 'Plan uspješno ažuriran.');
+    }
+
     public function show(PaymentPlan $plan): InertiaResponse
     {
         $exchangeRates = Setting::getExchangeRates();
@@ -236,19 +248,19 @@ class PaymentPlanController extends Controller
             $csv .= "Opis: {$plan->description}\n";
         }
         $csv .= "\n";
-        $csv .= "Br. fakture;Dobavljač;Poslovnica;Iznos;Valuta;Status;Planirani datum;Opis\n";
+        $csv .= "Br. fakture;Dobavljač;Opis;Poslovnica;Iznos;Valuta;Status;Planirani datum\n";
 
         foreach ($payments as $payment) {
             $csv .= sprintf(
                 "%s;%s;%s;%s;%s;%s;%s;%s\n",
                 $payment->invoice_number ?? '',
                 $payment->supplier->name ?? ($payment->description ?? ''),
+                $payment->supplier ? ($payment->description ?? '') : '',
                 $payment->branch->name ?? '',
                 number_format($payment->amount, 2, ',', '.'),
                 $payment->currency,
                 $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaćeno',
-                $payment->planned_date->format('d.m.Y'),
-                $payment->supplier ? ($payment->description ?? '') : ''
+                $payment->planned_date->format('d.m.Y')
             );
         }
 
@@ -327,8 +339,8 @@ class PaymentPlanController extends Controller
 
         $headers = [
             TranslationHelper::trans('invoice_number', $locale),
-            TranslationHelper::trans('description', $locale),
             TranslationHelper::trans('supplier', $locale),
+            TranslationHelper::trans('description', $locale),
             TranslationHelper::trans('branch', $locale),
             TranslationHelper::trans('amount', $locale),
             TranslationHelper::trans('currency', $locale),
@@ -342,8 +354,8 @@ class PaymentPlanController extends Controller
         foreach ($payments as $payment) {
             $row = [
                 'invoice' => $payment->invoice_number ?? '-',
-                'description' => $payment->description ?? '-',
                 'supplier' => $payment->supplier->name ?? ($payment->description ?? '-'),
+                'description' => $payment->description ?? '-',
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,
@@ -409,8 +421,8 @@ class PaymentPlanController extends Controller
             
             $rows .= "<tr>
                 <td class=\"invoice\">{$invoiceNumber}</td>
-                <td class=\"description\">{$description}</td>
                 <td>{$supplierName}</td>
+                <td class=\"description\">{$description}</td>
                 <td>{$branchName}</td>
                 <td class=\"{$amountClass}\">{$formattedAmount} {$payment->currency}</td>
                 <td>{$formattedDate}</td>
@@ -509,8 +521,8 @@ class PaymentPlanController extends Controller
                 <thead>
                     <tr>
                         <th class="invoice">Br. fakture</th>
-                        <th class="description">Opis</th>
                         <th class="supplier">Dobavljač</th>
+                        <th class="description">Opis</th>
                         <th class="branch">Poslovnica</th>
                         <th class="amount">Iznos</th>
                         <th class="date">Datum</th>

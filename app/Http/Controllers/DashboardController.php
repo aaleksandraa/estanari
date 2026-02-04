@@ -232,7 +232,7 @@ class DashboardController extends Controller
 
         $csv = "PLAN PLAĆANJA - " . date('d.m.Y H:i') . "\n";
         $csv .= "Period: " . $this->getDateFilterLabel($dateFilter, $startDate, $endDate) . "\n\n";
-        $csv .= "Dobavljač,Poslovnica,Iznos,Valuta,Status,Planirani datum,Opis\n";
+        $csv .= "Br. fakture,Dobavljač,Opis,Poslovnica,Iznos,Valuta,Status,Planirani datum\n";
 
         $totalKM = 0;
         $totalEUR = 0;
@@ -240,14 +240,15 @@ class DashboardController extends Controller
 
         foreach ($payments as $payment) {
             $csv .= sprintf(
-                "\"%s\",\"%s\",%.2f,%s,%s,%s,\"%s\"\n",
+                "\"%s\",\"%s\",\"%s\",\"%s\",%.2f,%s,%s,%s\n",
+                $payment->invoice_number ?? '',
                 $payment->supplier->name ?? '',
+                $payment->description ?? '',
                 $payment->branch->name ?? '',
                 $payment->amount,
                 $payment->currency,
                 $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
-                $payment->planned_date->format('d.m.Y'),
-                $payment->description ?? ''
+                $payment->planned_date->format('d.m.Y')
             );
             if ($payment->currency === 'KM') $totalKM += $payment->amount;
             elseif ($payment->currency === 'EUR') $totalEUR += $payment->amount;
@@ -367,8 +368,8 @@ class DashboardController extends Controller
 
         $headers = [
             TranslationHelper::trans('invoice_number', $locale),
-            TranslationHelper::trans('description', $locale),
             TranslationHelper::trans('supplier', $locale),
+            TranslationHelper::trans('description', $locale),
             TranslationHelper::trans('branch', $locale),
             TranslationHelper::trans('amount', $locale),
             TranslationHelper::trans('currency', $locale),
@@ -382,8 +383,8 @@ class DashboardController extends Controller
         foreach ($payments as $payment) {
             $row = [
                 'invoice' => $payment->invoice_number ?? '-',
-                'description' => $payment->description ?? '-',
                 'supplier' => $payment->supplier->name ?? '-',
+                'description' => $payment->description ?? '-',
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,

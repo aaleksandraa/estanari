@@ -219,20 +219,20 @@ class PaymentController extends Controller
 
         $payments = $query->get();
 
-        $csv = "Dobavljač,Poslovnica,Broj fakture,Iznos,Valuta,Status,Planirani datum,Datum plaćanja,Opis\n";
+        $csv = "Br. fakture,Dobavljač,Opis,Poslovnica,Iznos,Valuta,Status,Planirani datum,Datum plaćanja\n";
         
         foreach ($payments as $payment) {
             $csv .= sprintf(
-                "\"%s\",\"%s\",\"%s\",%.2f,%s,%s,%s,%s,\"%s\"\n",
-                $payment->supplier->name ?? '',
-                $payment->branch->name ?? '',
+                "\"%s\",\"%s\",\"%s\",\"%s\",%.2f,%s,%s,%s,%s\n",
                 $payment->invoice_number ?? '',
+                $payment->supplier->name ?? '',
+                $payment->description ?? '',
+                $payment->branch->name ?? '',
                 $payment->amount,
                 $payment->currency,
                 $payment->status === 'PAID' ? 'Plaćeno' : 'Neplaceno',
                 $payment->planned_date->format('d.m.Y'),
-                $payment->paid_date?->format('d.m.Y') ?? '',
-                $payment->description ?? ''
+                $payment->paid_date?->format('d.m.Y') ?? ''
             );
         }
 
@@ -273,7 +273,7 @@ class PaymentController extends Controller
         $excel->setTitle(
             'Sva plaćanja',
             'Exportovano: ' . now()->format('d.m.Y H:i'),
-            8
+            9
         );
 
         $excel->setSummaryRow([
@@ -281,15 +281,16 @@ class PaymentController extends Controller
             'Ukupno EUR' => number_format($totalEUR, 2, ',', '.') . ' EUR',
             'Ukupno USD' => number_format($totalUSD, 2, ',', '.') . ' USD',
             'Broj stavki' => $payments->count(),
-        ], 3, 8);
+        ], 3, 9);
 
-        $excel->setHeaders(['Br. fakture', 'Dobavljač', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Planirani datum', 'Datum plaćanja'], 5);
+        $excel->setHeaders(['Br. fakture', 'Dobavljač', 'Opis', 'Poslovnica', 'Iznos', 'Valuta', 'Status', 'Planirani datum', 'Datum plaćanja'], 5);
 
         $data = [];
         foreach ($payments as $payment) {
             $data[] = [
                 'invoice' => $payment->invoice_number ?? '-',
                 'supplier' => $payment->supplier->name ?? '-',
+                'description' => $payment->description ?? '-',
                 'branch' => $payment->branch->name ?? '-',
                 'amount' => $payment->amount,
                 'currency' => $payment->currency,

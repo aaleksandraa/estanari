@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/plans', [PaymentPlanController::class, 'index'])->name('plans.index');
     Route::post('/plans', [PaymentPlanController::class, 'store'])->name('plans.store');
     Route::get('/plans/{plan}', [PaymentPlanController::class, 'show'])->name('plans.show');
+    Route::put('/plans/{plan}', [PaymentPlanController::class, 'update'])->name('plans.update');
     Route::delete('/plans/{plan}', [PaymentPlanController::class, 'destroy'])->name('plans.destroy');
     Route::post('/plans/{plan}/mark-paid', [PaymentPlanController::class, 'markAsPaid'])->name('plans.mark-paid');
     Route::post('/plans/{plan}/add-payment', [PaymentPlanController::class, 'addPayment'])->name('plans.add-payment');

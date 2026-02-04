@@ -1,13 +1,14 @@
 <script setup>
 import { ref } from 'vue';
-import { router, usePage } from '@inertiajs/vue3';
+import { router, usePage, useForm } from '@inertiajs/vue3';
 import MainLayout from '@/Layouts/MainLayout.vue';
 import Header from '@/Components/Header.vue';
 import ConfirmModal from '@/Components/ConfirmModal.vue';
+import Modal from '@/Components/Modal.vue';
 import { format, parseISO } from 'date-fns';
 import {
     CalendarIcon, EllipsisHorizontalIcon, EyeIcon, TrashIcon, ArrowDownTrayIcon,
-    DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon
+    DocumentArrowDownIcon, ClipboardDocumentListIcon, CheckCircleIcon, PencilIcon
 } from '@heroicons/vue/24/outline';
 import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/vue/24/solid';
 import { useTranslations } from '@/composables/useTranslations';
@@ -25,6 +26,13 @@ const showConfirmModal = ref(false);
 const confirmAction = ref(null);
 const confirmPlan = ref(null);
 const confirmConfig = ref({ title: '', message: '', variant: 'warning', confirmText: 'Potvrdi' });
+
+// Edit modal state
+const showEditModal = ref(false);
+const editForm = useForm({
+    name: '',
+    description: '',
+});
 
 const formatDateTime = (dateStr) => {
     if (!dateStr) return '-';
@@ -60,6 +68,33 @@ const getMenuPosition = (planId) => {
 const viewPlan = (plan) => {
     router.get(route('plans.show', plan.id));
     openMenuId.value = null;
+};
+
+const openEditModal = (plan) => {
+    editForm.name = plan.name;
+    editForm.description = plan.description || '';
+    confirmPlan.value = plan;
+    showEditModal.value = true;
+    openMenuId.value = null;
+};
+
+const handleEditSubmit = () => {
+    if (!confirmPlan.value) return;
+    
+    editForm.put(route('plans.update', confirmPlan.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showEditModal.value = false;
+            confirmPlan.value = null;
+            editForm.reset();
+        },
+    });
+};
+
+const handleEditCancel = () => {
+    showEditModal.value = false;
+    confirmPlan.value = null;
+    editForm.reset();
 };
 
 const openDeleteConfirm = (plan) => {
@@ -242,6 +277,10 @@ const getDateFilterLabel = (filter) => {
                         <button @click="viewPlan(plan)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                             <EyeIcon class="h-4 w-4" /> {{ __('view_payment') }}
                         </button>
+                        <button v-if="page.props.auth.user?.canModify" @click="openEditModal(plan)" 
+                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50">
+                            <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
+                        </button>
                         <button v-if="!plan.is_paid && page.props.auth.user?.canModify" @click="openMarkAsPaidConfirm(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
                             <CheckCircleIcon class="h-4 w-4" /> {{ __('mark_as_paid') }}
@@ -277,6 +316,61 @@ const getDateFilterLabel = (filter) => {
             @confirm="handleConfirm"
             @cancel="handleCancel"
         />
+
+        <!-- Edit Modal -->
+        <Modal :show="showEditModal" @close="handleEditCancel" max-width="lg">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('edit') }} {{ __('save_plan').toLowerCase() }}</h2>
+                
+                <form @submit.prevent="handleEditSubmit" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('plan_name') }}
+                        </label>
+                        <input 
+                            v-model="editForm.name" 
+                            type="text" 
+                            required
+                            maxlength="255"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            :placeholder="__('plan_name_placeholder')"
+                        />
+                        <p v-if="editForm.errors.name" class="mt-1 text-sm text-red-600">{{ editForm.errors.name }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('description') }} ({{ __('optional') }})
+                        </label>
+                        <textarea 
+                            v-model="editForm.description" 
+                            rows="3"
+                            maxlength="1000"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            :placeholder="__('plan_description_placeholder')"
+                        ></textarea>
+                        <p v-if="editForm.errors.description" class="mt-1 text-sm text-red-600">{{ editForm.errors.description }}</p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button 
+                            type="button" 
+                            @click="handleEditCancel"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            {{ __('cancel') }}
+                        </button>
+                        <button 
+                            type="submit" 
+                            :disabled="editForm.processing"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                        >
+                            {{ editForm.processing ? __('saving') : __('save') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
     </MainLayout>
 </template>
 
