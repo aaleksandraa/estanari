@@ -181,8 +181,10 @@ const openEditPlanModal = (plan) => {
     // Convert scheduled_date to YYYY-MM-DD format for date input
     if (plan.scheduled_date) {
         try {
-            const date = typeof plan.scheduled_date === 'string' ? parseISO(plan.scheduled_date) : plan.scheduled_date;
-            editPlanForm.scheduled_date = format(date, 'yyyy-MM-dd');
+            // Handle ISO string format (e.g., "2026-02-05T23:00:00.000000Z")
+            const dateStr = typeof plan.scheduled_date === 'string' ? plan.scheduled_date : plan.scheduled_date.toISOString();
+            // Extract just the date part (YYYY-MM-DD)
+            editPlanForm.scheduled_date = dateStr.split('T')[0];
         } catch {
             editPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
         }
@@ -339,19 +341,12 @@ const submitCreatePlan = () => {
 
 <template>
     <MainLayout>
-        <Header :title="__('saved_plans')" />
+        <Header 
+            :title="__('saved_plans')" 
+            :showCreatePlanButton="page.props.auth.user?.canModify"
+            @create-plan="showCreatePlanModal = true"
+        />
         <div class="p-6 space-y-6">
-            <!-- Create New Plan Button -->
-            <div v-if="page.props.auth.user?.canModify" class="flex justify-end">
-                <button
-                    @click="showCreatePlanModal = true"
-                    class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                    <PlusIcon class="h-5 w-5" />
-                    {{ __('create_new_plan') }}
-                </button>
-            </div>
-
             <!-- Filters Section - Single Row -->
             <div class="bg-white rounded-xl border border-gray-200 p-4">
                 <div class="flex flex-wrap items-center gap-3">
@@ -513,7 +508,8 @@ const submitCreatePlan = () => {
                         <div class="flex items-center justify-between text-xs text-gray-500">
                             <div class="flex items-center gap-1">
                                 <CalendarIcon class="h-3.5 w-3.5" />
-                                <span>{{ getDateFilterLabel(plan.date_filter) }}</span>
+                                <span v-if="plan.scheduled_date">{{ __('payment_date') }}: {{ formatDate(plan.scheduled_date) }}</span>
+                                <span v-else>{{ getDateFilterLabel(plan.date_filter) }}</span>
                             </div>
                             <span v-if="plan.is_paid && plan.paid_at" class="text-green-600">
                                 {{ __('paid_at') }} {{ formatDate(plan.paid_at) }}
