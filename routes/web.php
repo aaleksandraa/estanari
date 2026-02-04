@@ -90,6 +90,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/plans/{plan}', [PaymentPlanController::class, 'update'])->name('plans.update');
     Route::delete('/plans/{plan}', [PaymentPlanController::class, 'destroy'])->name('plans.destroy');
     Route::post('/plans/{plan}/mark-paid', [PaymentPlanController::class, 'markAsPaid'])->name('plans.mark-paid');
+    Route::post('/plans/{plan}/change-paid-date', [PaymentPlanController::class, 'changePaidDate'])->name('plans.change-paid-date');
     Route::post('/plans/{plan}/add-payment', [PaymentPlanController::class, 'addPayment'])->name('plans.add-payment');
     Route::post('/plans/{plan}/add-custom', [PaymentPlanController::class, 'addCustomItem'])->name('plans.add-custom');
     Route::post('/plans/{plan}/remove-payment/{payment}', [PaymentPlanController::class, 'removePayment'])->name('plans.remove-payment');

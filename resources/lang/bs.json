@@ -216,5 +216,6 @@
   "custom": "Prilagođeno",
   "plan_name_placeholder": "npr. Plan za 05.02.2026",
   "plan_description_placeholder": "Dodatne napomene o planu...",
-  "optional": "opcionalno"
+  "optional": "opcionalno",
+  "change_paid_date": "Promijeni datum plaćanja"
 }

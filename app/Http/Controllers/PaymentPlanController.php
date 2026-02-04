@@ -129,6 +129,18 @@ class PaymentPlanController extends Controller
         return back()->with('success', "Plan označen kao plaćen. Ukupno {$paidCount} plaćanja označeno.");
     }
 
+    public function changePaidDate(Request $request, PaymentPlan $plan): RedirectResponse
+    {
+        $validated = $request->validate([
+            'paid_date' => 'required|date',
+        ]);
+
+        // Update plan paid_at date
+        $plan->update(['paid_at' => $validated['paid_date']]);
+
+        return back()->with('success', 'Datum plaćanja uspješno promijenjen.');
+    }
+
     public function addPayment(Request $request, PaymentPlan $plan): RedirectResponse
     {
         $validated = $request->validate([

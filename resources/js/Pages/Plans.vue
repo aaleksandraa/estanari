@@ -116,6 +116,12 @@ const editForm = useForm({
     description: '',
 });
 
+// Change paid date modal state
+const showChangePaidDateModal = ref(false);
+const changePaidDateForm = useForm({
+    paid_date: '',
+});
+
 const formatDateTime = (dateStr) => {
     if (!dateStr) return '-';
     try { return format(typeof dateStr === 'string' ? parseISO(dateStr) : dateStr, 'dd.MM.yyyy HH:mm'); }
@@ -183,6 +189,36 @@ const handleEditCancel = () => {
     showEditModal.value = false;
     confirmPlan.value = null;
     editForm.reset();
+};
+
+const openChangePaidDateModal = (plan) => {
+    confirmPlan.value = plan;
+    // Convert paid_at to YYYY-MM-DD format for date input
+    if (plan.paid_at) {
+        const date = typeof plan.paid_at === 'string' ? parseISO(plan.paid_at) : plan.paid_at;
+        changePaidDateForm.paid_date = format(date, 'yyyy-MM-dd');
+    }
+    showChangePaidDateModal.value = true;
+    openMenuId.value = null;
+};
+
+const handleChangePaidDateSubmit = () => {
+    if (!confirmPlan.value) return;
+    
+    changePaidDateForm.post(route('plans.change-paid-date', confirmPlan.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showChangePaidDateModal.value = false;
+            confirmPlan.value = null;
+            changePaidDateForm.reset();
+        },
+    });
+};
+
+const handleChangePaidDateCancel = () => {
+    showChangePaidDateModal.value = false;
+    confirmPlan.value = null;
+    changePaidDateForm.reset();
 };
 
 const openDeleteConfirm = (plan) => {
@@ -464,6 +500,10 @@ const getDateFilterLabel = (filter) => {
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50">
                             <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
                         </button>
+                        <button v-if="plan.is_paid && page.props.auth.user?.canModify" @click="openChangePaidDateModal(plan)" 
+                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-orange-600 hover:bg-orange-50">
+                            <CalendarIcon class="h-4 w-4" /> {{ __('change_paid_date') }}
+                        </button>
                         <button v-if="!plan.is_paid && page.props.auth.user?.canModify" @click="openMarkAsPaidConfirm(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-600 hover:bg-green-50">
                             <CheckCircleIcon class="h-4 w-4" /> {{ __('mark_as_paid') }}
@@ -549,6 +589,44 @@ const getDateFilterLabel = (filter) => {
                             class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
                         >
                             {{ editForm.processing ? __('saving') : __('save') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Change Paid Date Modal -->
+        <Modal :show="showChangePaidDateModal" @close="handleChangePaidDateCancel" max-width="md">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('change_paid_date') }}</h2>
+                
+                <form @submit.prevent="handleChangePaidDateSubmit" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('payment_date') }}
+                        </label>
+                        <DateInput
+                            v-model="changePaidDateForm.paid_date"
+                            :placeholder="__('select_payment_date')"
+                            required
+                        />
+                        <p v-if="changePaidDateForm.errors.paid_date" class="mt-1 text-sm text-red-600">{{ changePaidDateForm.errors.paid_date }}</p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button 
+                            type="button" 
+                            @click="handleChangePaidDateCancel"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            {{ __('cancel') }}
+                        </button>
+                        <button 
+                            type="submit" 
+                            :disabled="changePaidDateForm.processing"
+                            class="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-lg hover:bg-orange-600 disabled:opacity-50"
+                        >
+                            {{ changePaidDateForm.processing ? __('saving') : __('save') }}
                         </button>
                     </div>
                 </form>
