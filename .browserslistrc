@@ -1,0 +1,11 @@
+# Browsers that we support
+
+defaults
+> 0.5%
+last 2 versions
+not dead
+iOS >= 12
+Safari >= 12
+Chrome >= 80
+Firefox >= 78
+Edge >= 88
