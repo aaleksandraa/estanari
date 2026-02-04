@@ -124,5 +124,7 @@
   "plan_description_placeholder": "További megjegyzések a tervről...",
   "plan_for_today": "TERV mára",
   "no_plans_today": "Nincs terv mára",
-  "create_plan": "Terv létrehozása"
+  "create_plan": "Terv létrehozása",
+  "edit_plan": "Terv szerkesztése",
+  "save_changes": "Változtatások mentése"
 }

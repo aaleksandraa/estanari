@@ -124,5 +124,7 @@
   "plan_description_placeholder": "Допълнителни бележки за плана...",
   "plan_for_today": "ПЛАН за днес",
   "no_plans_today": "Няма планове за днес",
-  "create_plan": "Създай план"
+  "create_plan": "Създай план",
+  "edit_plan": "Редактирай план",
+  "save_changes": "Запази промените"
 }

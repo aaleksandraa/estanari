@@ -124,5 +124,7 @@
   "plan_description_placeholder": "Dodatne opombe o načrtu...",
   "plan_for_today": "NAČRT za danes",
   "no_plans_today": "Ni načrtov za danes",
-  "create_plan": "Ustvari načrt"
+  "create_plan": "Ustvari načrt",
+  "edit_plan": "Uredi načrt",
+  "save_changes": "Shrani spremembe"
 }

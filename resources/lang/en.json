@@ -124,5 +124,7 @@
   "plan_description_placeholder": "Additional notes about the plan...",
   "plan_for_today": "PLAN for today",
   "no_plans_today": "No plans for today",
-  "create_plan": "Create plan"
+  "create_plan": "Create plan",
+  "edit_plan": "Edit plan",
+  "save_changes": "Save changes"
 }

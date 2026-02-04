@@ -222,5 +222,7 @@
   "create_new_plan": "Kreiraj novi plan",
   "plan_for_today": "PLAN za današnji dan",
   "no_plans_today": "Nema planova za danas",
-  "create_plan": "Kreiraj plan"
+  "create_plan": "Kreiraj plan",
+  "edit_plan": "Uredi plan",
+  "save_changes": "Spremi izmjene"
 }

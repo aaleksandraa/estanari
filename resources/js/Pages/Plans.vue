@@ -117,11 +117,20 @@ const confirmAction = ref(null);
 const confirmPlan = ref(null);
 const confirmConfig = ref({ title: '', message: '', variant: 'warning', confirmText: 'Potvrdi' });
 
-// Edit modal state
+// Edit modal state (for name and description only)
 const showEditModal = ref(false);
 const editForm = useForm({
     name: '',
     description: '',
+});
+
+// Edit Plan Modal state (with scheduled_date)
+const showEditPlanModal = ref(false);
+const editingPlan = ref(null);
+const editPlanForm = useForm({
+    name: '',
+    description: '',
+    scheduled_date: '',
 });
 
 // Change paid date modal state
@@ -178,6 +187,34 @@ const openEditModal = (plan) => {
     confirmPlan.value = plan;
     showEditModal.value = true;
     openMenuId.value = null;
+};
+
+const openEditPlanModal = (plan) => {
+    editingPlan.value = plan;
+    editPlanForm.name = plan.name;
+    editPlanForm.description = plan.description || '';
+    editPlanForm.scheduled_date = plan.scheduled_date || new Date().toISOString().split('T')[0];
+    showEditPlanModal.value = true;
+    openMenuId.value = null;
+};
+
+const submitEditPlan = () => {
+    if (!editingPlan.value) return;
+    
+    editPlanForm.put(route('plans.update', editingPlan.value.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showEditPlanModal.value = false;
+            editingPlan.value = null;
+            editPlanForm.reset();
+        },
+    });
+};
+
+const closeEditModal = () => {
+    showEditPlanModal.value = false;
+    editingPlan.value = null;
+    editPlanForm.reset();
 };
 
 const handleEditSubmit = () => {
@@ -527,6 +564,10 @@ const submitCreatePlan = () => {
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50">
                             <PencilIcon class="h-4 w-4" /> {{ __('edit') }}
                         </button>
+                        <button v-if="page.props.auth.user?.canModify" @click="openEditPlanModal(plan)" 
+                            class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50">
+                            <CalendarIcon class="h-4 w-4" /> {{ __('edit_plan') }}
+                        </button>
                         <button v-if="plan.is_paid && page.props.auth.user?.canModify" @click="openChangePaidDateModal(plan)" 
                             class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                             <CalendarIcon class="h-4 w-4" /> {{ __('change_paid_date') }}
@@ -616,6 +657,73 @@ const submitCreatePlan = () => {
                             class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
                         >
                             {{ editForm.processing ? __('saving') : __('save') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+
+        <!-- Edit Plan Modal (with scheduled_date) -->
+        <Modal :show="showEditPlanModal" @close="closeEditModal" max-width="lg">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">{{ __('edit_plan') }}</h2>
+                
+                <form @submit.prevent="submitEditPlan" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('plan_name') }} <span class="text-red-500">*</span>
+                        </label>
+                        <input 
+                            v-model="editPlanForm.name" 
+                            type="text" 
+                            required
+                            maxlength="255"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            :placeholder="__('plan_name_placeholder')"
+                        />
+                        <p v-if="editPlanForm.errors.name" class="mt-1 text-sm text-red-600">{{ editPlanForm.errors.name }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('description') }} ({{ __('optional') }})
+                        </label>
+                        <textarea 
+                            v-model="editPlanForm.description" 
+                            rows="3"
+                            maxlength="1000"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            :placeholder="__('plan_description_placeholder')"
+                        ></textarea>
+                        <p v-if="editPlanForm.errors.description" class="mt-1 text-sm text-red-600">{{ editPlanForm.errors.description }}</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ __('payment_date') }} <span class="text-red-500">*</span>
+                        </label>
+                        <DateInput
+                            v-model="editPlanForm.scheduled_date"
+                            :placeholder="__('select_payment_date')"
+                            required
+                        />
+                        <p v-if="editPlanForm.errors.scheduled_date" class="mt-1 text-sm text-red-600">{{ editPlanForm.errors.scheduled_date }}</p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button 
+                            type="button" 
+                            @click="closeEditModal"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            {{ __('cancel') }}
+                        </button>
+                        <button 
+                            type="submit" 
+                            :disabled="editPlanForm.processing"
+                            class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+                        >
+                            {{ editPlanForm.processing ? __('saving') : __('save_changes') }}
                         </button>
                     </div>
                 </form>

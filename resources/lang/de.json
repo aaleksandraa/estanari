@@ -124,5 +124,7 @@
   "plan_description_placeholder": "Zusätzliche Hinweise zum Plan...",
   "plan_for_today": "PLAN für heute",
   "no_plans_today": "Keine Pläne für heute",
-  "create_plan": "Plan erstellen"
+  "create_plan": "Plan erstellen",
+  "edit_plan": "Plan bearbeiten",
+  "save_changes": "Änderungen speichern"
 }

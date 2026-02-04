@@ -124,5 +124,7 @@
   "plan_description_placeholder": "Note aggiuntive sul piano...",
   "plan_for_today": "PIANO per oggi",
   "no_plans_today": "Nessun piano per oggi",
-  "create_plan": "Crea piano"
+  "create_plan": "Crea piano",
+  "edit_plan": "Modifica piano",
+  "save_changes": "Salva modifiche"
 }
