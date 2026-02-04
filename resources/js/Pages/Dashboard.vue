@@ -22,7 +22,6 @@ const selectedIds = ref([]);
 const showPaymentModal = ref(false);
 const showSavePlanModal = ref(false);
 const showMarkPaidModal = ref(false);
-const showCreatePlanModal = ref(false);
 const editingPayment = ref(null);
 const filteredBranches = ref([]);
 const searchQuery = ref(props.filters?.search || '');
@@ -61,12 +60,6 @@ const planForm = useForm({
     total_km: 0,
     total_eur: 0,
     total_usd: 0,
-});
-
-const createPlanForm = useForm({
-    name: '',
-    description: '',
-    scheduled_date: new Date().toISOString().split('T')[0],
 });
 
 watch(() => paymentForm.supplier_id, (newVal) => {
@@ -305,23 +298,6 @@ const formatDate = (date) => {
 const navigateToPlan = (planId) => {
     router.get(route('plans.show', planId));
 };
-
-const openCreatePlanModal = () => {
-    createPlanForm.reset();
-    createPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
-    showCreatePlanModal.value = true;
-};
-
-const submitCreatePlan = () => {
-    createPlanForm.post(route('plans.store'), {
-        preserveScroll: true,
-        onSuccess: () => {
-            showCreatePlanModal.value = false;
-            createPlanForm.reset();
-            createPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
-        },
-    });
-};
 </script>
 
 <template>
@@ -330,9 +306,11 @@ const submitCreatePlan = () => {
             :title="__('payments_overview')" 
         />
         <div class="p-6 space-y-6">
-            <!-- Today's Plans Block -->
-            <div v-if="todayPlans && todayPlans.length > 0" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-                <div class="flex items-center justify-between mb-4">
+            <!-- Today's Plan Block - Single Plan -->
+            <div v-if="todayPlans && todayPlans.length > 0" 
+                @click="navigateToPlan(todayPlans[0].id)"
+                class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6 cursor-pointer hover:shadow-lg transition-all">
+                <div class="flex items-center justify-between mb-2">
                     <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
                         <CalendarIcon class="h-6 w-6 text-blue-600" />
                         {{ __('plan_for_today') }}
@@ -342,48 +320,26 @@ const submitCreatePlan = () => {
                     </span>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div 
-                        v-for="plan in todayPlans" 
-                        :key="plan.id"
-                        @click="navigateToPlan(plan.id)"
-                        :class="[
-                            'group relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md',
-                            plan.is_paid 
-                                ? 'bg-green-50 border-green-200 hover:border-green-300' 
-                                : 'bg-white border-blue-200 hover:border-blue-300'
-                        ]"
-                    >
-                        <div class="flex items-start justify-between mb-2">
-                            <h3 :class="[
-                                'font-semibold text-base',
-                                plan.is_paid ? 'text-green-800' : 'text-gray-900'
-                            ]">
-                                {{ plan.name }}
-                            </h3>
-                            <span v-if="plan.is_paid" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                <CheckCircleSolidIcon class="h-3.5 w-3.5" /> {{ __('paid_status') }}
-                            </span>
+                <div class="mt-4">
+                    <h3 class="text-2xl font-bold text-blue-600 mb-2">
+                        {{ todayPlans[0].name }}
+                    </h3>
+                    <p v-if="todayPlans[0].description" class="text-sm text-gray-600 mb-4">
+                        {{ todayPlans[0].description }}
+                    </p>
+                    
+                    <div class="flex items-center gap-6 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-600">{{ __('invoices') }}:</span>
+                            <span class="font-semibold text-gray-900">{{ todayPlans[0].payment_count }}</span>
                         </div>
-                        
-                        <p v-if="plan.description" class="text-sm text-gray-600 mb-3 line-clamp-2">
-                            {{ plan.description }}
-                        </p>
-                        
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-gray-600">{{ __('invoices') }}:</span>
-                                <span class="font-semibold text-gray-900">{{ plan.payment_count }}</span>
-                            </div>
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-gray-600">{{ __('total') }}:</span>
-                                <div class="text-right">
-                                    <div class="font-semibold text-blue-600">{{ formatCurrency(plan.total_km) }} KM</div>
-                                    <div v-if="plan.total_eur > 0" class="text-xs text-green-600">{{ formatCurrency(plan.total_eur) }} EUR</div>
-                                    <div v-if="plan.total_usd > 0" class="text-xs text-purple-600">{{ formatCurrency(plan.total_usd) }} USD</div>
-                                </div>
-                            </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-600">{{ __('total') }}:</span>
+                            <span class="font-semibold text-blue-600">{{ formatCurrency(todayPlans[0].total_km) }} KM</span>
                         </div>
+                        <span v-if="todayPlans[0].is_paid" class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                            <CheckCircleSolidIcon class="h-4 w-4" /> {{ __('paid_status') }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -638,68 +594,6 @@ const submitCreatePlan = () => {
                     <button type="button" @click="showMarkPaidModal = false; paidDate = new Date().toISOString().split('T')[0]" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">{{ __('cancel') }}</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-green-500 rounded-lg hover:bg-green-600">
                         {{ __('mark_as_paid') }}
-                    </button>
-                </div>
-            </form>
-        </Modal>
-
-        <!-- Create Plan Modal -->
-        <Modal :show="showCreatePlanModal" :title="__('create_new_plan')" @close="showCreatePlanModal = false">
-            <form @submit.prevent="submitCreatePlan" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ __('plan_name') }} {{ __('required') }}
-                    </label>
-                    <input 
-                        v-model="createPlanForm.name" 
-                        type="text" 
-                        required
-                        maxlength="255"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        :placeholder="__('plan_name_placeholder')"
-                    />
-                    <p v-if="createPlanForm.errors.name" class="mt-1 text-sm text-red-600">{{ createPlanForm.errors.name }}</p>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ __('description') }} ({{ __('optional') }})
-                    </label>
-                    <textarea 
-                        v-model="createPlanForm.description" 
-                        rows="3"
-                        maxlength="1000"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        :placeholder="__('plan_description_placeholder')"
-                    ></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">
-                        {{ __('payment_date') }} {{ __('required') }}
-                    </label>
-                    <DateInput
-                        v-model="createPlanForm.scheduled_date"
-                        :placeholder="__('select_payment_date')"
-                        :required="true"
-                    />
-                    <p class="mt-1 text-xs text-gray-500">{{ __('select_payment_date') }}</p>
-                </div>
-
-                <div class="flex justify-end gap-3 pt-4">
-                    <button 
-                        type="button" 
-                        @click="showCreatePlanModal = false"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                    >
-                        {{ __('cancel') }}
-                    </button>
-                    <button 
-                        type="submit" 
-                        :disabled="createPlanForm.processing"
-                        class="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 disabled:opacity-50"
-                    >
-                        {{ createPlanForm.processing ? __('saving') : __('create_plan') }}
                     </button>
                 </div>
             </form>
