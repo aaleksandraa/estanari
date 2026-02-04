@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
-import babel from 'vite-plugin-babel';
 
 export default defineConfig({
     plugins: [
@@ -16,13 +15,6 @@ export default defineConfig({
                     includeAbsolute: false,
                 },
             },
-        }),
-        babel({
-            babelConfig: {
-                babelrc: false,
-                configFile: './babel.config.json',
-            },
-            filter: /\.(jsx?|vue)$/,
         }),
     ],
     resolve: {

@@ -19,14 +19,16 @@ Projekat je ažuriran za potpunu kompatibilnost sa iOS uređajima (iPhone, iPad)
 ## Implementirane Izmjene
 
 ### 1. JavaScript Transpilacija
-- **Babel** konfiguracija za transpilaciju modernih JS funkcija
-- **Core-js** polyfills za starije browsere
+- **Vite** automatski transpilira kod za es2015 i Safari 12+
+- **Core-js** polyfills za starije browsere (opciono)
 - Transpilacija optional chaining (`?.`) i drugih ES2020+ funkcija
+- **Važno:** Babel nije potreban - Vite ima ugrađenu transpilaciju
 
 ### 2. Build Konfiguracija
 - Vite build target: `es2015` i `safari12`
 - Browserslist konfiguracija za precizno targetiranje
 - CSS target za Safari 12+
+- Vite automatski obrađuje Vue i JavaScript fajlove
 
 ### 3. iOS Specifični Fixevi
 
