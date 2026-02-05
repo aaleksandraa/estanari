@@ -10,6 +10,7 @@ use App\Services\ExcelImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -41,10 +42,36 @@ class SupplierController extends Controller
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',
+            'branches' => 'nullable|array',
+            'branches.*.name' => 'required|string|max:255',
+            'branches.*.address' => 'nullable|string|max:500',
+            'branches.*.is_active' => 'boolean',
         ]);
 
-        $supplier = Supplier::create($validated);
-        AuditLog::log('suppliers', $supplier->id, 'INSERT', null, $supplier->toArray());
+        DB::transaction(function () use ($validated) {
+            $supplier = Supplier::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+            ]);
+            
+            AuditLog::log('suppliers', $supplier->id, 'INSERT', null, $supplier->toArray());
+
+            // Create branches if provided
+            if (!empty($validated['branches'])) {
+                foreach ($validated['branches'] as $branchData) {
+                    $branch = Branch::create([
+                        'supplier_id' => $supplier->id,
+                        'name' => $branchData['name'],
+                        'address' => $branchData['address'] ?? null,
+                        'is_active' => $branchData['is_active'] ?? true,
+                    ]);
+                    
+                    AuditLog::log('branches', $branch->id, 'INSERT', null, $branch->toArray());
+                }
+            }
+        });
 
         return back()->with('success', 'Dobavljač uspješno kreiran.');
     }
@@ -57,11 +84,71 @@ class SupplierController extends Controller
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:500',
             'is_active' => 'sometimes|boolean',
+            'branches' => 'nullable|array',
+            'branches.*.id' => 'nullable|integer|exists:branches,id',
+            'branches.*.name' => 'required|string|max:255',
+            'branches.*.address' => 'nullable|string|max:500',
+            'branches.*.is_active' => 'boolean',
+            'branches.*._isNew' => 'boolean',
+            'branchesToDelete' => 'nullable|array',
+            'branchesToDelete.*' => 'integer|exists:branches,id',
         ]);
 
-        $oldData = $supplier->toArray();
-        $supplier->update($validated);
-        AuditLog::log('suppliers', $supplier->id, 'UPDATE', $oldData, $supplier->fresh()->toArray());
+        DB::transaction(function () use ($validated, $supplier) {
+            $oldData = $supplier->toArray();
+            
+            // Update supplier
+            $supplier->update([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'address' => $validated['address'],
+                'is_active' => $validated['is_active'] ?? $supplier->is_active,
+            ]);
+            
+            AuditLog::log('suppliers', $supplier->id, 'UPDATE', $oldData, $supplier->fresh()->toArray());
+
+            // Handle branch deletions
+            if (!empty($validated['branchesToDelete'])) {
+                foreach ($validated['branchesToDelete'] as $branchId) {
+                    $branch = Branch::find($branchId);
+                    if ($branch && $branch->supplier_id === $supplier->id) {
+                        AuditLog::log('branches', $branch->id, 'DELETE', $branch->toArray(), null);
+                        $branch->delete();
+                    }
+                }
+            }
+
+            // Handle branch updates and creations
+            if (!empty($validated['branches'])) {
+                foreach ($validated['branches'] as $branchData) {
+                    if (!empty($branchData['_isNew']) && $branchData['_isNew']) {
+                        // Create new branch
+                        $branch = Branch::create([
+                            'supplier_id' => $supplier->id,
+                            'name' => $branchData['name'],
+                            'address' => $branchData['address'] ?? null,
+                            'is_active' => $branchData['is_active'] ?? true,
+                        ]);
+                        
+                        AuditLog::log('branches', $branch->id, 'INSERT', null, $branch->toArray());
+                    } elseif (!empty($branchData['id'])) {
+                        // Update existing branch
+                        $branch = Branch::find($branchData['id']);
+                        if ($branch && $branch->supplier_id === $supplier->id) {
+                            $oldBranchData = $branch->toArray();
+                            $branch->update([
+                                'name' => $branchData['name'],
+                                'address' => $branchData['address'] ?? null,
+                                'is_active' => $branchData['is_active'] ?? true,
+                            ]);
+                            
+                            AuditLog::log('branches', $branch->id, 'UPDATE', $oldBranchData, $branch->fresh()->toArray());
+                        }
+                    }
+                }
+            }
+        });
 
         return back()->with('success', 'Dobavljač uspješno ažuriran.');
     }

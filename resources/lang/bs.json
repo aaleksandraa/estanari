@@ -135,6 +135,7 @@
   "delete_branch_confirm": "Da li ste sigurni da želite obrisati ovu poslovnicu?",
   "yes_delete": "Da, obriši",
   "no_branches": "Nema poslovnica",
+  "no_branches_for_supplier": "Nema poslovnica za ovog dobavljača",
   "add_first_branch": "Dodajte prvu poslovnicu",
   "branches": "Poslovnice",
   "plan_details": "Detalji plana",
