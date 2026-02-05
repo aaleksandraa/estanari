@@ -126,5 +126,6 @@
   "no_plans_today": "Keine Pläne für heute",
   "create_plan": "Plan erstellen",
   "edit_plan": "Plan bearbeiten",
-  "save_changes": "Änderungen speichern"
+  "save_changes": "Änderungen speichern",
+  "plan_for": "Plan für"
 }

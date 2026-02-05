@@ -126,5 +126,6 @@
   "no_plans_today": "Nincs terv mára",
   "create_plan": "Terv létrehozása",
   "edit_plan": "Terv szerkesztése",
-  "save_changes": "Változtatások mentése"
+  "save_changes": "Változtatások mentése",
+  "plan_for": "Terv"
 }

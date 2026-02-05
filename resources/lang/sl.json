@@ -126,5 +126,6 @@
   "no_plans_today": "Ni načrtov za danes",
   "create_plan": "Ustvari načrt",
   "edit_plan": "Uredi načrt",
-  "save_changes": "Shrani spremembe"
+  "save_changes": "Shrani spremembe",
+  "plan_for": "Načrt za"
 }

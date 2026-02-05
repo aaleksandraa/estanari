@@ -285,9 +285,15 @@ const getCurrencyColor = (currency) => {
                     </div>
                 </div>
                 <div :class="['px-6 py-3 border-t', plan.is_paid ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200']">
-                    <div class="flex items-center gap-4 text-sm">
-                        <span class="text-gray-500">{{ t('filters') }}:</span>
-                        <span class="font-medium text-gray-700">{{ getDateFilterLabel(plan.date_filter) }}</span>
+                    <div class="flex items-center justify-between flex-wrap gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <span class="text-gray-500">{{ t('description') }}:</span>
+                            <span class="font-medium text-gray-700">{{ plan.description || '-' }}</span>
+                        </div>
+                        <div v-if="plan.scheduled_date" class="flex items-center gap-2">
+                            <span class="text-gray-500">{{ t('plan_for') }}:</span>
+                            <span class="font-semibold text-gray-800">{{ formatDate(plan.scheduled_date) }}</span>
+                        </div>
                     </div>
                 </div>
             </div>

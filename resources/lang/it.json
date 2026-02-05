@@ -126,5 +126,6 @@
   "no_plans_today": "Nessun piano per oggi",
   "create_plan": "Crea piano",
   "edit_plan": "Modifica piano",
-  "save_changes": "Salva modifiche"
+  "save_changes": "Salva modifiche",
+  "plan_for": "Piano per"
 }
