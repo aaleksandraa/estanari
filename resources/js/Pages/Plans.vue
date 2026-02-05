@@ -186,10 +186,10 @@ const openEditPlanModal = (plan) => {
             // Extract just the date part (YYYY-MM-DD)
             editPlanForm.scheduled_date = dateStr.split('T')[0];
         } catch {
-            editPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
+            editPlanForm.scheduled_date = '';
         }
     } else {
-        editPlanForm.scheduled_date = new Date().toISOString().split('T')[0];
+        editPlanForm.scheduled_date = '';
     }
     showEditPlanModal.value = true;
     openMenuId.value = null;

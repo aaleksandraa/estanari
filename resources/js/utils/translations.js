@@ -60,6 +60,7 @@ export const translations = {
         create_plan: 'Kreiraj plan',
         edit_plan: 'Uredi plan',
         save_changes: 'Spremi izmjene',
+        plan_for: 'Plan za',
         plan_description_placeholder: 'Dodatne napomene o planu...',
         add_payment_to_plan: 'Dodaj plaćanje', add_custom_item: 'Dodaj custom', plan_items: 'Stavke plana',
         total_converted_km: 'Ukupno konvertovano u KM', select_payment_to_add: 'Odaberi plaćanje koje želiš dodati u plan:',
@@ -177,6 +178,7 @@ export const translations = {
         create_plan: 'Plan erstellen',
         edit_plan: 'Plan bearbeiten',
         save_changes: 'Änderungen speichern',
+        plan_for: 'Plan für',
         plan_description_placeholder: 'Zusätzliche Hinweise zum Plan...',
         // Settings
         profile: 'Profil', manage_profile: 'Verwalten Sie Ihr Benutzerprofil',
@@ -283,6 +285,7 @@ export const translations = {
         create_plan: 'Create plan',
         edit_plan: 'Edit plan',
         save_changes: 'Save changes',
+        plan_for: 'Plan for',
         plan_description_placeholder: 'Additional notes about the plan...',
         // Settings
         profile: 'Profile', manage_profile: 'Manage your user profile',
