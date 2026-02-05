@@ -157,7 +157,22 @@ class DashboardController extends Controller
 
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']);
         $branches = Branch::where('is_active', true)->orderBy('name')->get(['id', 'name', 'supplier_id']);
-        $plans = \App\Models\PaymentPlan::orderBy('created_at', 'desc')->get(['id', 'name']);
+        
+        // Get all payment IDs that are already in any plan
+        $usedPaymentIds = \App\Models\PaymentPlan::whereNotNull('payment_ids')
+            ->pluck('payment_ids')
+            ->flatten()
+            ->unique()
+            ->toArray();
+        
+        // Only show plans that don't have the payment already (for "Add to Plan" modal)
+        $plans = \App\Models\PaymentPlan::orderBy('created_at', 'desc')
+            ->get(['id', 'name', 'payment_ids'])
+            ->map(function ($plan) use ($usedPaymentIds) {
+                // Mark which payments are already in this plan
+                $plan->used_payment_ids = is_array($plan->payment_ids) ? $plan->payment_ids : [];
+                return $plan;
+            });
 
         // Get today's plans
         $exchangeRates = Setting::getExchangeRates();

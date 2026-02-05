@@ -45,6 +45,16 @@ const plannedPayments = computed(() => props.payments.filter(p => p.status === '
 const allSelected = () => plannedPayments.value.length > 0 && props.selectedIds.length === plannedPayments.value.length;
 const currentPayment = computed(() => props.payments.find(p => p.id === openMenuId.value));
 
+// Filter plans to exclude those that already contain the payment being added
+const availablePlans = computed(() => {
+    if (!paymentToAddToPlan.value) return props.plans;
+    
+    return props.plans.filter(plan => {
+        const paymentIds = plan.used_payment_ids || [];
+        return !paymentIds.includes(paymentToAddToPlan.value.id);
+    });
+});
+
 const openMenu = async (event, paymentId) => {
     event.stopPropagation();
     const rect = event.currentTarget.getBoundingClientRect();
@@ -320,8 +330,11 @@ const getSortDirection = (column) => {
                 <label class="block text-sm font-medium text-gray-700 mb-1">Odaberi plan</label>
                 <select v-model="selectedPlanId" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">-- Odaberi plan --</option>
-                    <option v-for="plan in props.plans" :key="plan.id" :value="plan.id">{{ plan.name }}</option>
+                    <option v-for="plan in availablePlans" :key="plan.id" :value="plan.id">{{ plan.name }}</option>
                 </select>
+                <p v-if="availablePlans.length === 0" class="mt-2 text-sm text-amber-600">
+                    Ovo plaćanje je već dodano u sve dostupne planove.
+                </p>
             </div>
             <div class="flex justify-end gap-3 pt-4">
                 <button type="button" @click="showAddToPlanModal = false; paymentToAddToPlan = null; selectedPlanId = ''" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">{{ __('cancel') }}</button>

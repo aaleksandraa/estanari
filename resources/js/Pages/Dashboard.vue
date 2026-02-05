@@ -12,6 +12,7 @@ import { CheckCircleIcon as CheckCircleSolidIcon } from '@heroicons/vue/24/solid
 import DateInput from '@/Components/DateInput.vue';
 import Autocomplete from '@/Components/Autocomplete.vue';
 import { useTranslations } from '@/composables/useTranslations';
+import { format, parseISO } from 'date-fns';
 
 const { __, t } = useTranslations();
 
@@ -292,7 +293,12 @@ const formatCurrency = (value) => {
 };
 
 const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('bs-BA');
+    if (!date) return '-';
+    try {
+        return format(typeof date === 'string' ? parseISO(date) : date, 'dd.MM.yyyy');
+    } catch {
+        return '-';
+    }
 };
 
 const navigateToPlan = (planId) => {
